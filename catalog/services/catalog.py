@@ -12,6 +12,12 @@ from catalog.models import Product, RetailerListing
 SORTS = {"relevance": "Recommended", "price_asc": "Lowest price", "price_desc": "Highest price"}
 
 
+def select_source(params):
+    if params.get("source") in {"demo", "live"}:
+        return params["source"]
+    return "live" if RetailerListing.objects.filter(is_demo=False, product__is_demo=False).exists() else "demo"
+
+
 def decorate(product):
     product.offers = list(product.listings.all())
     # Compare only like source/area offers. Location-free listings are a separate group.
@@ -20,10 +26,12 @@ def decorate(product):
                 and o.availability == "in_stock" and o.last_checked >= cutoff]
     areas = {o.delivery_area for o in eligible}
     product.has_mixed_areas = len(areas) > 1
+    area_known = len(areas) == 1 and all(area and "unverified" not in area.lower() for area in areas)
+    product.has_comparison = len({o.retailer_id for o in eligible}) > 1 and area_known
     product.best_price = min((o.current_price for o in eligible), default=None)
-    product.best_ids = {o.id for o in eligible if o.current_price == product.best_price} if len(areas) <= 1 else set()
+    product.best_ids = {o.id for o in eligible if o.current_price == product.best_price} if product.has_comparison else set()
     product.offer_count = len(product.offers)
-    product.savings = (max(o.current_price for o in eligible) - product.best_price) if eligible and len(areas) <= 1 else Decimal("0")
+    product.savings = (max(o.current_price for o in eligible) - product.best_price) if product.has_comparison else Decimal("0")
     product.sort_price = product.best_price
     for offer in product.offers:
         offer.is_best = offer.id in product.best_ids
@@ -32,8 +40,7 @@ def decorate(product):
 
 def search_catalog(params):
     query = params.get("q", "").strip()[:150]
-    source = params.get("source", "demo")
-    source = source if source in {"demo", "live"} else "demo"
+    source = select_source(params)
     offers = RetailerListing.objects.filter(is_demo=source == "demo").select_related("retailer").order_by("current_price", "retailer__name")
     if params.get("retailer"):
         offers = offers.filter(retailer__slug=params["retailer"])

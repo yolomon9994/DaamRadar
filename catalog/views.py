@@ -1,19 +1,20 @@
 from django.core.paginator import Paginator
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, render
 
-from .models import Category, Product, Retailer
-from .services.catalog import SORTS, decorate, get_product_queryset, search_catalog
+from .models import Category, Product, Retailer, RetailerListing
+from .services.catalog import SORTS, decorate, get_product_queryset, search_catalog, select_source
 
 
 def home(request):
-    source = request.GET.get("source", "demo")
-    source = source if source in {"demo", "live"} else "demo"
-    results = search_catalog(request.GET)
+    source = select_source(request.GET)
+    results = search_catalog({**request.GET.dict(), "source": source})
     page = Paginator(results, 12).get_page(request.GET.get("page"))
     return render(request, "catalog/home.html", {
         "page_obj": page, "categories": Category.objects.all(), "retailers": Retailer.objects.all(),
         "brands": Product.objects.filter(is_demo=source == "demo").exclude(brand="").values_list("brand", flat=True).distinct().order_by("brand"),
         "sorts": SORTS, "source": source, "query": request.GET.get("q", ""),
+        "collected_count": RetailerListing.objects.filter(is_demo=False, product__is_demo=False).count(),
         "is_filtered": any(request.GET.get(k) for k in ["q", "category", "brand", "retailer"]),
     })
 
@@ -24,4 +25,7 @@ def product_detail(request, slug):
 
 
 def sources(request):
-    return render(request, "catalog/sources.html", {"retailers": Retailer.objects.all()})
+    return render(request, "catalog/sources.html", {
+        "retailers": Retailer.objects.annotate(collected_count=Count("listings", filter=Q(listings__is_demo=False, listings__product__is_demo=False))),
+        "collected_count": RetailerListing.objects.filter(is_demo=False, product__is_demo=False).count(),
+    })

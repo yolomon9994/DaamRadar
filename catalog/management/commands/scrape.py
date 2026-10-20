@@ -4,7 +4,8 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
-from catalog.models import Retailer, ScrapeRun
+from catalog.models import Category, Retailer, ScrapeRun
+from catalog.matching.normalization import identify
 from catalog.scraping.adapters import ADAPTERS
 from catalog.scraping.client import PoliteClient
 from catalog.scraping.types import CollectionError
@@ -14,7 +15,7 @@ logger = logging.getLogger("catalog")
 
 
 class Command(BaseCommand):
-    help = "Manually collect reviewed public product URLs. All initial sources are currently unavailable."
+    help = "Manually collect up to ten reviewed public product URLs. No scheduling or catalog crawling."
 
     def add_arguments(self, parser):
         parser.add_argument("retailer", choices=list(ADAPTERS))
@@ -37,8 +38,12 @@ class Command(BaseCommand):
                 raise CollectionError("Provide between 1 and 10 explicitly authorized product URLs.")
             client = PoliteClient(retailer.website)
             for url in dict.fromkeys(options["url"]):
-                ingest(retailer, adapter.collect(client, url))
+                item = adapter.collect(client, url)
+                # A narrow initial classification; unfamiliar products remain uncategorized.
+                category = Category.objects.filter(slug="dairy").first() if "milk" in identify(item.title).name.split() else None
+                listing, _ = ingest(retailer, item, category=category)
                 run.products_collected += 1
+                self.stdout.write(f"{listing.original_title} | PKR {listing.current_price:.2f} | {listing.availability} | {listing.url}")
             run.status = ScrapeRun.Status.SUCCESS
         except CollectionError as exc:
             run.status = ScrapeRun.Status.PARTIAL if run.products_collected else ScrapeRun.Status.BLOCKED

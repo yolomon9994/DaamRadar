@@ -1,9 +1,11 @@
 import time
 from urllib.parse import urlparse
-from urllib.robotparser import RobotFileParser
 
 import requests
+from protego import Protego
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator, validate_email
 
 from .types import CollectionError
 
@@ -14,9 +16,17 @@ class PoliteClient:
     def __init__(self, origin):
         self.origin = origin.rstrip("/")
         self.host = urlparse(self.origin).netloc
-        if not settings.SCRAPER_CONTACT:
-            raise CollectionError("Set SCRAPER_CONTACT to a monitored contact address before collection.")
-        self.user_agent = f"DaamRadarBot/0.1 (+mailto:{settings.SCRAPER_CONTACT})"
+        contact = settings.SCRAPER_CONTACT.strip()
+        try:
+            if contact.startswith("https://"):
+                URLValidator(schemes=["https"])(contact)
+                identity = contact
+            else:
+                validate_email(contact)
+                identity = f"mailto:{contact}"
+        except ValidationError:
+            raise CollectionError("Set SCRAPER_CONTACT to a monitored email or public HTTPS project/contact URL.") from None
+        self.user_agent = f"DaamRadarBot/0.1 (+{identity})"
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": self.user_agent})
         self.delay = settings.SCRAPER_DELAY_SECONDS
@@ -33,7 +43,7 @@ class PoliteClient:
         try:
             with self.session.get(url, timeout=(5, 20), allow_redirects=False, stream=True) as response:
                 if response.status_code != 200:
-                    raise CollectionError(f"HTTP {response.status_code}; stopped without retrying or bypassing access controls.")
+                    raise CollectionError(f"HTTP {response.status_code} on {parsed.path}; stopped without retrying or bypassing access controls.")
                 chunks, length = [], 0
                 for chunk in response.iter_content(16384):
                     length += len(chunk)
@@ -45,19 +55,18 @@ class PoliteClient:
                     raise CollectionError("Access challenge detected; collection stopped.")
                 return body, response.headers.get("Content-Type", "")
         except requests.RequestException as exc:
-            raise CollectionError(f"Source request failed ({type(exc).__name__}).") from exc
+            raise CollectionError(f"Source request failed ({type(exc).__name__}) on {parsed.path}.") from exc
 
     def get_html(self, url):
         if self.robots is None:
             text, content_type = self._request(f"{self.origin}/robots.txt")
             if "text/plain" not in content_type or not any(line.strip().lower().startswith("user-agent:") for line in text.splitlines()):
                 raise CollectionError("robots.txt could not be validated; collection blocked.")
-            self.robots = RobotFileParser()
-            self.robots.parse(text.splitlines())
+            self.robots = Protego.parse(text)
             crawl_delay = self.robots.crawl_delay(self.user_agent) or 0
             rate = self.robots.request_rate(self.user_agent)
             self.delay = max(self.delay, crawl_delay, rate.seconds / rate.requests if rate else 0)
-        if not self.robots.can_fetch(self.user_agent, url):
+        if not self.robots.can_fetch(url, self.user_agent):
             raise CollectionError("robots.txt disallows this URL.")
         body, content_type = self._request(url)
         if "text/html" not in content_type:

@@ -2,7 +2,7 @@
 
 A local-first Pakistani grocery discovery and listed-price comparison MVP, built with Python, Django 5.2 LTS, Django REST Framework, Django Templates, Bootstrap 5, and vanilla JavaScript.
 
-**Data status:** no live prices have been collected. All 12 seeded products and 36 seeded listings are clearly labeled fictional demo data. Initial retailer integrations are unavailable. See [the source investigation](docs/retailer-review.md).
+**Data status:** the local database contains three real, dated Jalal Sons observations collected on 18 October 2026: Olpers Milk 1Ltr (PKR 350), Olpers Milk 1.5Ltr (PKR 518), and Nestle Everyday Milk 180Ml (PKR 44). These are not real-time quotes or delivery guarantees. One intermediate run timed out; a later manual invocation completed the batch. The 12 seeded products and 36 seeded listings remain clearly labeled fictional demo data. See [the source investigation](docs/retailer-review.md).
 
 ## Run on Windows / PowerShell
 
@@ -22,7 +22,7 @@ Copy-Item .env.example .env
 
 Open **http://127.0.0.1:8000/**. No account is required. Virtual-environment activation is optional; using the executable directly avoids PowerShell execution-policy issues. Copy `.env.example` only if you do not already have a `.env` file.
 
-Try `Olpers Milk 1L`, `nutela`, `Surf Excel`, or `National Ketchup 400g`. Select category, retailer, brand, or price sorting and press **Apply**. Open a product for sorted listings, availability, timestamps, and sample history. The **Collected prices** tab has an intentional empty state. Demo links do not point at invented retailer product URLs.
+Try `Olpers Milk 1L` in the collected catalog. The website and API default to collected records once any exist; a fresh database with only demo fixtures defaults to demo. Switch to **Demo catalog** for `nutela`, `Surf Excel`, or `National Ketchup 400g`. Select category, retailer, brand, or sorting and press **Apply**. Collected product details show real source links, schema availability, check time, and history. One source is labeled an observed price, with no winning-retailer badge. Demo links remain disabled. Real observations are stored in your ignored local database; a fresh checkout must collect its own observations.
 
 `seed_demo` can be rerun: it refreshes demo observations without duplicating products/listings or creating a fictitious history trend. It never modifies live products. To initialize retailer records without sample products, use `python manage.py seed_retailers`.
 
@@ -35,13 +35,14 @@ Try `Olpers Milk 1L`, `nutela`, `Surf Excel`, or `National Ketchup 400g`. Select
 - Atomic listing upserts with a history observation for every check, even if the price is unchanged.
 - Read-only REST API, administration interface, SQLite default, and environment-based PostgreSQL configuration.
 - Collection framework: bounded requests, contact-identifying user agent, fail-closed robots checks, crawl delays, no redirects/retries/access bypass, parser errors, manual management command, and audit trail.
-- Synthetic saved-HTML fixture tests. The provisional Al-Fatah parser is **offline only**, not a validated live adapter.
+- A manual Jalal Sons public-HTML adapter, with three actual imported observations. Naheed's source-format parser is retained offline because its collector request returned 403. Springs and Al-Fatah remain disabled.
+- Synthetic and minimal factual-extract fixture tests, with provenance. Source descriptions, images, session data, and unrelated configuration are not imported.
 
 ## API
 
 | Endpoint | Result |
 | --- | --- |
-| `GET /api/products/` | Paginated product comparisons, default demo source |
+| `GET /api/products/` | Paginated comparisons, collected source when present, otherwise demo |
 | `GET /api/products/<slug>/` | Product and ascending-price listings |
 | `GET /api/categories/` | Grocery categories |
 | `GET /api/retailers/` | Retailers, availability status, and access notes |
@@ -55,7 +56,7 @@ Product list parameters: `q`, `category` (slug), `retailer` (slug), `brand`, `so
 /api/products/?source=live
 ```
 
-Demo/live flags are explicit in serialized results. Amounts are decimal strings, denominated in PKR. `best_price` excludes stale, out-of-stock, and unknown-availability offers. Different delivery areas suppress winning-retailer flags; `has_mixed_areas` warns that the lowest observed figure is not a direct comparison. APIs do not accept anonymous writes. Anonymous API traffic is limited to 120 requests/minute per application cache/IP; use shared caching and correctly configured proxies for a multi-process production deployment.
+Demo/live flags are explicit in serialized results. Amounts are decimal strings, denominated in PKR. `best_price` excludes stale, out-of-stock, and unknown-availability offers. `has_comparison` requires multiple retailers with one known comparable area. A single retailer or unverified areas suppress winning-retailer flags; `has_mixed_areas` warns that the numerical minimum is not a direct comparison. APIs do not accept anonymous writes. Anonymous API traffic is limited to 120 requests/minute per application cache/IP; use shared caching and correctly configured proxies for a multi-process production deployment.
 
 ## Checks
 
@@ -67,24 +68,32 @@ Demo/live flags are explicit in serialized results. Amounts are decimal strings,
 .\.venv\Scripts\python.exe manage.py collectstatic --noinput
 ```
 
-Tests cover product identities and rejection cases, typo search and combined filters, source separation, price ranking, stale/unavailable observations, mixed delivery areas, idempotent demo seeding, API pagination and read-only behavior, escaped queries, atomic ingestion/history, synthetic HTML parsing, rate limiting, robots denials, source timeouts, and unavailable adapters. They make no retailer network calls. Bootstrap is vendored locally, including its source map and MIT license.
+Tests cover matching, search/filters, source separation and selection, price ranking, stale/unavailable observations, area and single-source safeguards, idempotent seeding, API behavior, ingestion/history, observed source formats, heading checks, robots wildcard precedence, timeouts, manual upserts, partial runs, and unavailable sources. They make no retailer network calls. See [fixture provenance](catalog/tests/fixtures/README.md). Bootstrap is vendored locally with its source map and MIT license.
 
 ## Collection and manual setup
 
-Do not enable collection until the source has been validated. No scheduler, Celery, or cron job is activated.
+Jalal Sons has a limited manual adapter. No scheduler, Celery, or cron job is activated. The current workspace has manual collection configured for Jalal Sons only. A fresh checkout defaults to collection disabled.
 
 ```powershell
 .\.venv\Scripts\python.exe manage.py seed_retailers
-.\.venv\Scripts\python.exe manage.py scrape alfatah --url 'https://alfatah.pk/products/REVIEWED-PRODUCT-HANDLE'
+.\.venv\Scripts\python.exe manage.py scrape jalal-sons --url 'https://www.jalalsons.com.pk/product/olpers-milk-1ltr-2809398'
 ```
 
-**The command above deliberately fails with an actionable source limitation today**, without contacting the retailer, and records a blocked `ScrapeRun`. Configuration alone cannot bypass an adapter's disabled state.
+The command reads robots, then the explicit product page, and records a fresh observation. It stops without automatic retry on denial, redirect, timeout, unsupported format, or challenge. Three listings have been imported locally; an intermediate connection timeout was followed by a successful later manual invocation. The source needs more reliability validation before scheduling. Naheed, Springs, and Al-Fatah remain blocked even if their configuration flags are changed.
+
+For a fresh setup, configure `.env` with `SCRAPING_ENABLED=true` and `SCRAPER_CONTACT` as a monitored email or public HTTPS project/contact URL. Enable the reviewed source only:
+
+```powershell
+.\.venv\Scripts\python.exe manage.py shell -c "from catalog.models import Retailer; Retailer.objects.filter(slug='jalal-sons').update(status='enabled', collection_enabled=True)"
+```
+
+This only enables explicit manual commands. It does not activate background or automatic scraping. Product links should be checked against currently published crawler rules before adding new URLs; the client checks robots again on each run. Delivery area is explicitly unverified, and schema `InStock` is not a delivery guarantee.
 
 To enable a future source:
 
-1. Obtain a permitted data-access route (written permission, licensed feed, or explicit applicable API terms), validate robots and product/variant/location behavior, and record dated evidence in `docs/retailer-review.md`.
+1. Establish the applicable data-access and reuse basis, review source terms/robots, and validate product/variant/location behavior. Record dated evidence in `docs/retailer-review.md`. An API/feed agreement is preferable for broader publication; open-source code and nonprofit intent do not grant rights in third-party content.
 2. Implement and test that retailer's `collect(client, url)` adapter using real, permitted saved fixtures. Set its code-level `enabled` flag only after that validation. The current JSON-LD parser accepts one unambiguous PKR offer and intentionally rejects ranges and multiple variants.
-3. Set `SCRAPER_CONTACT` to your monitored address and `SCRAPING_ENABLED=true` in `.env`. Mark that retailer `Validated` and enable collection in Django admin. Use the approved frequency, at least the configured five-second delay and any stricter robots delay. The command accepts at most ten explicit URLs; it is not a catalog crawler.
+3. Set `SCRAPER_CONTACT` to your monitored email or public HTTPS project/contact URL and `SCRAPING_ENABLED=true` in `.env`. Mark that retailer `Validated` and enable collection in Django admin. Use at least the configured five-second delay and any stricter robots delay. The command accepts at most ten explicit URLs; it is not a catalog crawler.
 4. Run a small manual collection and inspect listing titles, sizes, prices, availability, URLs, delivery areas, and scrape logs before adding a scheduler. Access challenges, 403, 429, and redirects stop collection without retries.
 
 Create your own admin credentials if needed:
@@ -118,7 +127,7 @@ catalog/matching/         Normalization and compatible-identity matching
 catalog/services/         Local search/comparison and atomic ingestion
 catalog/scraping/         HTTP client, parsing, per-retailer adapter boundaries
 catalog/management/       Seed and manual collection commands
-catalog/tests/            Automated tests and synthetic saved HTML
+catalog/tests/            Automated tests and documented source-format extracts
 templates/                Django templates
 static/                   Custom styles, SVG illustrations, JS, Bootstrap
 docs/                     Architecture and dated source investigation
@@ -128,6 +137,6 @@ docs/                     Architecture and dated source investigation
 
 ## Next implementation phase
 
-The foundation and sample comparison workflow are functional. **Phase 2 remains gated on an accessible, permitted source.** Secure one retailer feed/access agreement, validate actual product and location/variant semantics, add a production adapter with permitted fixtures, and collect a small reviewed batch. Only then expand live matching and choose scheduling frequency.
+The foundation and first factual-price import are functional. Next, improve Jalal Sons request reliability and validate more exact product pages, verify location-specific semantics through a supported route, and establish another reliable source to compare the same SKU. Naheed needs its denied collector access resolved; its identity must not be changed to evade the denial. Broader reuse arrangements and a safe frequency must be established before publishing a large dataset or scheduling collection.
 
-Current limits: no real retailer prices, no active live purchase links in seeded data, no scheduler, no price-trend chart, no checkout/delivery, and no location selector. Search scores at most 1,000 candidates; replace that bounded small-catalog approach with indexed retrieval as the dataset grows. Matching favors false negatives over incorrect merges and needs broader brand/variant coverage and manual review tools. Browser layout/JavaScript and PostgreSQL require separate environment validation.
+Current limits: three real listings from one retailer; intermittent connection timeout observed; delivery area unverified; no real cross-retailer comparison yet; no scheduler, trend chart, checkout/delivery, or location selector. Search scores at most 1,000 candidates; replace this bounded small-catalog approach as data grows. Matching needs broader brand/variant coverage and review tools. Browser layout/JavaScript and PostgreSQL need separate runtime validation.

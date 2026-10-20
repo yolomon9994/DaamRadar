@@ -29,11 +29,12 @@ class ProductSerializer(serializers.ModelSerializer):
     size = serializers.CharField(source="size_label")
     best_price = serializers.DecimalField(max_digits=12, decimal_places=2, allow_null=True, read_only=True)
     has_mixed_areas = serializers.BooleanField(read_only=True)
+    has_comparison = serializers.BooleanField(read_only=True)
     listings = ListingSerializer(source="offers", many=True, read_only=True)
 
     class Meta:
         model = Product
-        fields = ["id", "slug", "canonical_name", "brand", "category", "quantity", "unit", "pack_count", "size", "image", "is_demo", "best_price", "has_mixed_areas", "listings"]
+        fields = ["id", "slug", "canonical_name", "brand", "category", "quantity", "unit", "pack_count", "size", "image", "is_demo", "best_price", "has_mixed_areas", "has_comparison", "listings"]
 
 
 class HistorySerializer(serializers.ModelSerializer):

@@ -23,7 +23,7 @@ class CatalogTests(TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, "DaamRadar")
         self.assertContains(self.client.get("/"), "fictional examples")
-        self.assertContains(self.client.get("/?source=live"), "no live prices have been collected")
+        self.assertContains(self.client.get("/?source=live"), "No live prices have been collected yet")
 
     def test_partial_case_insensitive_and_typo_searches(self):
         for query in ["OLPERS", "Olpers Milk 1000ml", "nutela", "surf exel", "ketch"]:

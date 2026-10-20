@@ -8,6 +8,12 @@ from bs4 import BeautifulSoup
 from .types import CollectionError, ScrapedProduct
 
 
+def schema_type(value, expected):
+    if isinstance(value, list):
+        return any(schema_type(child, expected) for child in value)
+    return value in {expected, f"https://schema.org/{expected}", f"http://schema.org/{expected}"} if isinstance(value, str) else False
+
+
 def parse_product_html(html, page_url):
     soup = BeautifulSoup(html, "html.parser")
     nodes = []
@@ -17,8 +23,7 @@ def parse_product_html(html, page_url):
             for child in value:
                 walk(child)
         elif isinstance(value, dict):
-            kinds = value.get("@type", [])
-            if kinds == "Product" or isinstance(kinds, list) and "Product" in kinds:
+            if schema_type(value.get("@type"), "Product"):
                 nodes.append(value)
             if "@graph" in value:
                 walk(value["@graph"])
@@ -36,7 +41,7 @@ def parse_product_html(html, page_url):
         if len(offer) != 1:
             raise CollectionError("Multiple variant offers require a validated variant adapter.")
         offer = offer[0]
-    if not isinstance(offer, dict) or offer.get("@type") != "Offer" or offer.get("priceCurrency") != "PKR":
+    if not isinstance(offer, dict) or not schema_type(offer.get("@type"), "Offer") or offer.get("priceCurrency") != "PKR":
         raise CollectionError("A single explicit PKR Offer is required; aggregate prices are unsupported.")
     try:
         price = Decimal(str(offer["price"]))
