@@ -1,0 +1,21 @@
+<!doctype html><html><head>
+<title>Factual markup extract — Cartpk, 20 October 2026</title>
+<link rel="canonical" href="https://www.cartpk.com/olper-s-milk-full-cream-milk-1ltr">
+<meta property="product:price:amount" content="360">
+<meta property="product:price:currency" content="PKR">
+<meta property="product:price:amount" content="360.00">
+<meta property="product:price:currency" content="PKR">
+<!-- Minimal reproduction of the observed invalid description escape, not a repaired offer. -->
+<script type="application/ld+json">{"@type":"Product","description":"\&#039;"}</script>
+</head><body>
+<div class="product-info-main">
+  <h1 class="page-title">OLPERS - Milk Full Cream 1 Litre</h1>
+  <span class="price-wrapper" data-price-amount="360" data-price-type="finalPrice"><span class="price">Rs 360.00</span></span>
+  <div class="stock available"><span>In stock</span></div>
+</div>
+<!-- Separate recommendation prices observed outside the main product block. -->
+<div class="recommendations">
+  <span data-price-type="finalPrice" data-price-amount="190">Rs 190.00</span>
+  <span data-price-type="finalPrice" data-price-amount="720">Rs 720.00</span>
+</div>
+</body></html>

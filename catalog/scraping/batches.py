@@ -1,6 +1,11 @@
 """Small reviewed URL sets for repeatable manual collection, never discovery crawls."""
 
 BATCHES = {
+    "cartpk-milk-1l": {
+        "retailer": "cartpk",
+        "reviewed_at": "2026-10-20",
+        "urls": ["https://www.cartpk.com/olper-s-milk-full-cream-milk-1ltr"],
+    },
     "jalal-sons-basics": {
         "retailer": "jalal-sons",
         "reviewed_at": "2026-10-18",

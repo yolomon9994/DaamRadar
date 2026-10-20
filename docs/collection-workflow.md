@@ -1,6 +1,6 @@
 # Manual collection workflow
 
-This workflow searches no external sites on behalf of visitors and activates no scheduler. Jalal Sons is the only currently enabled collector. Use PowerShell from the project directory.
+This workflow searches no external sites on behalf of visitors and activates no scheduler. Jalal Sons and Cartpk are enabled locally; Cartpk is restricted to one reviewed product URL. Use PowerShell from the project directory.
 
 ## After pulling these changes
 
@@ -24,7 +24,16 @@ The tracked batch in `catalog/scraping/batches.py` contains the three previously
 .\.venv\Scripts\python.exe manage.py scrape jalal-sons --batch jalal-sons-basics --report-dir reports
 ```
 
-Global `SCRAPING_ENABLED`, the source's `collection_enabled` flag, and its `enabled` status must permit real collection. The workspace already has these configured for Jalal Sons. New checkouts default to disabled; see the README for setup. A run accepts at most ten distinct product URLs, and all selected URLs are validated before any request.
+Global `SCRAPING_ENABLED`, the source's `collection_enabled` flag, and its `enabled` status must permit collection. The workspace has these configured for Jalal Sons and Cartpk. New checkouts default to disabled; see the README for setup. A run accepts at most ten distinct URLs, all validated before any request. Cartpk allows only its exact reviewed 1L milk URL.
+
+For the first Cartpk import on a fresh configured checkout:
+
+```powershell
+.\.venv\Scripts\python.exe manage.py scrape cartpk --batch cartpk-milk-1l --dry-run
+.\.venv\Scripts\python.exe manage.py scrape cartpk --batch cartpk-milk-1l --report-dir reports
+```
+
+For later refreshes, use `scrape cartpk --refresh-existing --stale-only --report-dir reports`. The first real import was run #6 on 20 October: one PKR 360 observation in two requests (robots and product). The matcher linked it to Jalal Sons' existing 1L product without creating a duplicate canonical product. Unverified delivery areas suppress winning-retailer and savings labels, even though the listed prices are shown side by side.
 
 ## Refresh existing observations
 

@@ -52,7 +52,7 @@ class CollectedCatalogTests(TestCase):
         slug = self.listings[0].product.slug
         response = self.client.get(f"/products/{slug}/")
         self.assertContains(response, "Visit retailer", count=2)
-        self.assertContains(response, "Delivery areas differ")
+        self.assertContains(response, "Delivery areas may differ or be unverified")
         self.assertContains(response, self.listings[0].url)
         self.assertNotContains(response, "SAMPLE LOW")
         sources = self.client.get("/sources/")

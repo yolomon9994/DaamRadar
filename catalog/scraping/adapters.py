@@ -5,8 +5,9 @@ from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 
-from catalog.matching.normalization import normalize_text
+from catalog.matching.normalization import identify, match_score, normalize_text
 from .parsers import parse_product_html
+from .cartpk import parse_cartpk_html
 from .types import CollectionError
 
 
@@ -24,6 +25,9 @@ class PublicProductAdapter:
     path_pattern = ""
     area_note = ""
 
+    def parse_page(self, html, url):
+        return parse_product_html(html, url)
+
     def validate_url(self, url):
         parsed = urlparse(url)
         if (f"{parsed.scheme}://{parsed.netloc}" != self.origin or parsed.username
@@ -35,7 +39,7 @@ class PublicProductAdapter:
         parsed = self.validate_url(url)
         html = client.get_html(url)
         try:
-            item = parse_product_html(html, url)
+            item = self.parse_page(html, url)
         except CollectionError as exc:
             raise CollectionError(str(exc), code="parse_error") from exc
         headings = {normalize_text(node.get_text(" ", strip=True)) for node in BeautifulSoup(html, "html.parser").select("h1")}
@@ -59,6 +63,19 @@ class JalalSonsAdapter(PublicProductAdapter):
     area_note = "Jalal Sons public catalog; delivery area unverified"
 
 
+class CartpkAdapter(PublicProductAdapter):
+    origin = "https://www.cartpk.com"
+    # Keep collection bounded to the one product whose markup was reviewed.
+    path_pattern = r"/olper-s-milk-full-cream-milk-1ltr"
+    area_note = "Cartpk public catalog; delivery area unverified"
+
+    def parse_page(self, html, url):
+        item = parse_cartpk_html(html, url)
+        if match_score(identify(item.title, item.brand), identify("Olpers Full Cream Milk 1L")) < 92:
+            raise CollectionError("Cartpk title no longer identifies the reviewed single 1L milk product.", code="parse_error")
+        return item
+
+
 class SpringsAdapter(UnavailableAdapter):
     reason = "Springs terms restrict copying/distribution without written permission; location-specific data access is unvalidated."
 
@@ -74,4 +91,5 @@ class AlFatahAdapter(UnavailableAdapter):
         return parse_product_html(html, url)
 
 
-ADAPTERS = {"naheed": NaheedAdapter, "jalal-sons": JalalSonsAdapter, "springs": SpringsAdapter, "alfatah": AlFatahAdapter}
+ADAPTERS = {"naheed": NaheedAdapter, "jalal-sons": JalalSonsAdapter, "cartpk": CartpkAdapter,
+            "springs": SpringsAdapter, "alfatah": AlFatahAdapter}

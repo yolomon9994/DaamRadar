@@ -2,7 +2,7 @@
 
 A local-first Pakistani grocery discovery and listed-price comparison MVP, built with Python, Django 5.2 LTS, Django REST Framework, Django Templates, Bootstrap 5, and vanilla JavaScript.
 
-**Data status:** three Jalal Sons listings were collected on 18 October and refreshed on 20 October 2026: Olpers Milk 1Ltr (PKR 350), Olpers Milk 1.5Ltr (PKR 518), and Nestle Everyday Milk 180Ml (PKR 44). Each has two real observations locally. These are not real-time quotes or delivery guarantees. The 12 seeded products and 36 seeded listings remain fictional demo data. See [the source investigation](docs/retailer-review.md) and [manual collection runbook](docs/collection-workflow.md).
+**Data status:** the local database now has four real listings across Jalal Sons and Cartpk, representing three canonical products. Olper's Milk 1L has two source observations on 20 October 2026: Jalal Sons PKR 350 and Cartpk PKR 360. The 1.5L and 180ml Jalal Sons records remain separate products. Prices are dated observations, not real-time quotes or delivery guarantees. Delivery areas remain unverified, so no winning retailer or savings claim is shown. The 12 seeded products and 36 seeded listings remain fictional demo data. See [the source investigation](docs/retailer-review.md) and [manual collection runbook](docs/collection-workflow.md).
 
 ## Run on Windows / PowerShell
 
@@ -35,7 +35,7 @@ Try `Olpers Milk 1L` in the collected catalog. The website and API default to co
 - Atomic listing upserts with a history observation for every check, even if the price is unchanged.
 - Read-only REST API, administration interface, SQLite default, and environment-based PostgreSQL configuration.
 - Collection framework: bounded requests, fixed identifying user agent, fail-closed robots, crawl delays, one delayed retry for timeouts only, no access-denial retries, structured errors, per-URL reports, and overlap protection.
-- A manual Jalal Sons public-HTML adapter, with three actual imported observations. Naheed's source-format parser is retained offline because its collector request returned 403. Springs and Al-Fatah remain disabled.
+- Manual Jalal Sons and Cartpk public-HTML adapters. Cartpk is limited to its reviewed Olper's 1L URL and requires visible price, numeric final price, and explicit PKR metadata to agree. Its malformed description JSON-LD is neither repaired nor used. Naheed's parser is retained offline after a denied collector request; Springs and Al-Fatah remain disabled.
 - Synthetic and minimal factual-extract fixture tests, with provenance. Source descriptions, images, session data, and unrelated configuration are not imported.
 
 ## API
@@ -72,7 +72,7 @@ Tests cover matching, search/filters, source separation and selection, price ran
 
 ## Collection and manual setup
 
-Jalal Sons has a limited manual adapter. No scheduler, Celery, or cron job is activated. The current workspace has manual collection configured for Jalal Sons only. A fresh checkout defaults to collection disabled.
+Jalal Sons and Cartpk have limited manual adapters. No scheduler, Celery, or cron job is activated. The current workspace has manual collection configured for those two retailers. A fresh checkout defaults to collection disabled.
 
 ```powershell
 .\.venv\Scripts\python.exe manage.py seed_retailers
@@ -91,6 +91,15 @@ For repeatable manual collection:
 ```
 
 Reports are written as `reports/scrape-<run-id>.json` and remain local. After pulling this change, run `manage.py migrate` for the structured run fields and the one-active-run-per-retailer constraint. No scheduler is activated.
+
+Cartpk's reviewed one-product batch:
+
+```powershell
+.\.venv\Scripts\python.exe manage.py scrape cartpk --batch cartpk-milk-1l --dry-run
+.\.venv\Scripts\python.exe manage.py scrape cartpk --refresh-existing --stale-only --report-dir reports
+```
+
+The initial Cartpk import was run #6: one listing in two HTTP requests, linked to the existing 1L canonical product. Source detail pages and the product API sort Jalal Sons and Cartpk by their numeric listed prices and retain source links, check times, availability, and area caveats. The first-time import command is `scrape cartpk --batch cartpk-milk-1l --report-dir reports`; existing-only refresh cannot create records on an empty checkout. After `seed_retailers`, enable a reviewed source in admin or use the setup command below with its slug (`jalal-sons` or `cartpk`). Do not enable other Cartpk URLs without further markup/access review.
 
 For a fresh setup, configure `.env` with `SCRAPING_ENABLED=true` and `SCRAPER_CONTACT` as a monitored email or public HTTPS project/contact URL. Enable the reviewed source only:
 
@@ -148,6 +157,6 @@ docs/                     Architecture and dated source investigation
 
 ## Next implementation phase
 
-The foundation and first factual-price import are functional. Next, improve Jalal Sons request reliability and validate more exact product pages, verify location-specific semantics through a supported route, and establish another reliable source to compare the same SKU. Naheed needs its denied collector access resolved; its identity must not be changed to evade the denial. Broader reuse arrangements and a safe frequency must be established before publishing a large dataset or scheduling collection.
+The first real cross-retailer listed-price comparison is functional for Olper's Milk 1L. Next, verify location-specific availability through a supported route, assess sustained source reliability, and add a small reviewed set of identical products across these sources. Naheed needs its denied access resolved without identity switching. Establish appropriate broader reuse arrangements and a safe frequency before publishing a large dataset or scheduling collection.
 
-Current limits: three real listings from one retailer; sustained reliability unproven despite a successful refresh; delivery area unverified; no real cross-retailer comparison yet. Cartpk and Olpers Mart were investigated as possible second sources but not enabled. There is no scheduler, trend chart, checkout/delivery, or location selector. Search scores at most 1,000 candidates; replace this bounded approach as data grows. Matching needs broader coverage and review tools. Browser layout/JavaScript and PostgreSQL need separate runtime validation.
+Current limits: only one product has real listings from two retailers; Cartpk's adapter is restricted to one exact URL; sustained reliability and delivery areas remain unverified; no final delivered-cost comparison is claimed. Olpers Mart is not enabled. There is no scheduler, trend chart, checkout/delivery, or location selector. Search scores at most 1,000 candidates; replace this bounded approach as data grows. Matching needs broader coverage and review tools. Browser layout/JavaScript and PostgreSQL need separate runtime validation.
