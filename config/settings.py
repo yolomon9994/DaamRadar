@@ -71,6 +71,11 @@ X_FRAME_OPTIONS = "DENY"
 SCRAPING_ENABLED = env_bool("SCRAPING_ENABLED")
 SCRAPER_CONTACT = os.getenv("SCRAPER_CONTACT", "")
 SCRAPER_DELAY_SECONDS = max(5, float(os.getenv("SCRAPER_DELAY_SECONDS", "5")))
+SCRAPER_CONNECT_TIMEOUT = min(30, max(1, float(os.getenv("SCRAPER_CONNECT_TIMEOUT", "10"))))
+SCRAPER_READ_TIMEOUT = min(30, max(1, float(os.getenv("SCRAPER_READ_TIMEOUT", "20"))))
+# At most one additional attempt for timeout exceptions only, never HTTP errors.
+SCRAPER_TIMEOUT_RETRIES = min(1, max(0, int(os.getenv("SCRAPER_TIMEOUT_RETRIES", "1"))))
+SCRAPER_RETRY_DELAY_SECONDS = min(30, max(5, float(os.getenv("SCRAPER_RETRY_DELAY_SECONDS", "10"))))
 PRICE_STALE_HOURS = int(os.getenv("PRICE_STALE_HOURS", "48"))
 LOGGING = {"version": 1, "disable_existing_loggers": False,
            "handlers": {"console": {"class": "logging.StreamHandler"}},

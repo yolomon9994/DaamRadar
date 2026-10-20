@@ -1,12 +1,17 @@
+import json
 import logging
+from datetime import timedelta
+from pathlib import Path
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from catalog.models import Category, Retailer, ScrapeRun
+from catalog.models import Category, Retailer, RetailerListing, ScrapeRun
 from catalog.matching.normalization import identify
 from catalog.scraping.adapters import ADAPTERS
+from catalog.scraping.batches import BATCHES
 from catalog.scraping.client import PoliteClient
 from catalog.scraping.types import CollectionError
 from catalog.services.ingestion import ingest
@@ -19,44 +24,142 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("retailer", choices=list(ADAPTERS))
-        parser.add_argument("--url", action="append", default=[], help="Explicit authorized product URL; repeat up to 10 times.")
+        targets = parser.add_mutually_exclusive_group()
+        targets.add_argument("--url", action="append", default=[], help="Explicit reviewed URL; repeat up to 10 times.")
+        targets.add_argument("--batch", choices=list(BATCHES), help="A saved reviewed URL batch.")
+        targets.add_argument("--refresh-existing", action="store_true", help="Refresh this retailer's existing non-demo product URLs.")
+        parser.add_argument("--stale-only", action="store_true", help="With --refresh-existing, select observations older than PRICE_STALE_HOURS.")
+        parser.add_argument("--dry-run", action="store_true", help="Validate and list targets without network requests or database writes.")
+        parser.add_argument("--report-dir", type=Path, help="Write a JSON report as scrape-<run-id>.json in this directory.")
+
+    def get_targets(self, retailer, options):
+        if sum(bool(options[key]) for key in ["url", "batch", "refresh_existing"]) != 1:
+            raise CommandError("Choose exactly one of --url, --batch, or --refresh-existing.")
+        if options["stale_only"] and not options["refresh_existing"]:
+            raise CommandError("--stale-only requires --refresh-existing.")
+        if options["batch"]:
+            batch = BATCHES[options["batch"]]
+            if batch["retailer"] != retailer.slug:
+                raise CommandError("This saved batch belongs to a different retailer.")
+            urls = batch["urls"]
+        elif options["refresh_existing"]:
+            listings = RetailerListing.objects.filter(retailer=retailer, is_demo=False, product__is_demo=False).exclude(url="")
+            if options["stale_only"]:
+                listings = listings.filter(last_checked__lt=timezone.now() - timedelta(hours=settings.PRICE_STALE_HOURS))
+            urls = list(listings.order_by("last_checked", "pk").values_list("url", flat=True))
+        else:
+            urls = options["url"]
+        urls = list(dict.fromkeys(urls))
+        if len(urls) > 10:
+            raise CommandError("At most 10 distinct URLs may be collected in one manual run; select a smaller batch.")
+        return urls
+
+    def save_report(self, run, directory):
+        if directory is None:
+            return
+        path = directory / f"scrape-{run.pk}.json"
+        data = {
+            "run_id": run.pk, "retailer": run.retailer.slug, "status": run.status,
+            "started_at": run.started_at.isoformat(), "completed_at": run.completed_at.isoformat(),
+            "products_collected": run.products_collected, "request_count": run.request_count,
+            "error_code": run.error_code, "error": run.error, "results": run.results,
+        }
+        try:
+            with path.open("x", encoding="utf-8") as report:
+                json.dump(data, report, indent=2, ensure_ascii=False)
+                report.write("\n")
+        except OSError as exc:
+            raise CommandError(f"Run #{run.pk} is saved in the database, but its JSON report could not be written ({type(exc).__name__}).") from exc
+        self.stdout.write(f"Report: {path}")
 
     def handle(self, *args, **options):
         try:
             retailer = Retailer.objects.get(slug=options["retailer"])
         except Retailer.DoesNotExist:
             raise CommandError("Retailer is not configured. Run python manage.py seed_retailers first.") from None
-        run = ScrapeRun.objects.create(retailer=retailer)
-        client = None
-        try:
-            adapter = ADAPTERS[retailer.slug]()
+        urls = self.get_targets(retailer, options)
+        adapter = ADAPTERS[retailer.slug]()
+        if options["dry_run"]:
+            if options["report_dir"]:
+                raise CommandError("--report-dir cannot be used with --dry-run.")
             if not adapter.enabled:
-                raise CollectionError(adapter.reason)
+                raise CommandError(adapter.reason)
+            for url in urls:
+                try:
+                    adapter.validate_url(url)
+                except CollectionError as exc:
+                    raise CommandError(str(exc)) from exc
+                self.stdout.write(url)
+            self.stdout.write(f"Dry run: {len(urls)} URL(s); no requests or observations created.")
+            return
+        if not urls:
+            self.stdout.write("No matching URLs to refresh; no requests or observations created.")
+            return
+        if options["report_dir"]:
+            try:
+                options["report_dir"].mkdir(parents=True, exist_ok=True)
+            except OSError as exc:
+                raise CommandError(f"Cannot prepare report directory ({type(exc).__name__}).") from exc
+        try:
+            with transaction.atomic():
+                run = ScrapeRun.objects.create(retailer=retailer, results=[{"url": url, "status": "pending"} for url in urls])
+        except IntegrityError as exc:
+            active = ScrapeRun.objects.filter(retailer=retailer, status="running").first()
+            if active is None:
+                raise
+            raise CommandError(f"Run #{active.pk} is already running for {retailer.name}. Inspect it before starting another collection.") from exc
+        client = None
+        failure = None
+        current_result = None
+        try:
+            if not adapter.enabled:
+                raise CollectionError(adapter.reason, code="source_unavailable")
             if not settings.SCRAPING_ENABLED or not retailer.collection_enabled or retailer.status != "enabled":
-                raise CollectionError("Collection is disabled. Source review and explicit configuration are required.")
-            if not 1 <= len(options["url"]) <= 10:
-                raise CollectionError("Provide between 1 and 10 explicitly authorized product URLs.")
+                raise CollectionError("Collection is disabled. Source review and explicit configuration are required.", code="configuration")
+            for url in urls:
+                adapter.validate_url(url)
             client = PoliteClient(retailer.website)
-            for url in dict.fromkeys(options["url"]):
-                item = adapter.collect(client, url)
+            for result in run.results:
+                current_result = result
+                try:
+                    item = adapter.collect(client, result["url"])
+                except CollectionError as exc:
+                    result.update(status="failed", error_code=exc.code, error=str(exc), http_status=exc.http_status)
+                    raise
                 # A narrow initial classification; unfamiliar products remain uncategorized.
                 category = Category.objects.filter(slug="dairy").first() if "milk" in identify(item.title).name.split() else None
                 listing, _ = ingest(retailer, item, category=category)
                 run.products_collected += 1
+                result.update(status="stored", listing_id=listing.pk, price=str(listing.current_price), checked_at=listing.last_checked.isoformat())
+                run.save(update_fields=["results", "products_collected"])
                 self.stdout.write(f"{listing.original_title} | PKR {listing.current_price:.2f} | {listing.availability} | {listing.url}")
             run.status = ScrapeRun.Status.SUCCESS
         except CollectionError as exc:
-            run.status = ScrapeRun.Status.PARTIAL if run.products_collected else ScrapeRun.Status.BLOCKED
+            blocked = exc.code in {"source_unavailable", "configuration", "robots_disallowed", "robots_unverified", "http_error", "access_challenge", "invalid_input"}
+            run.status = ScrapeRun.Status.PARTIAL if run.products_collected else ScrapeRun.Status.BLOCKED if blocked else ScrapeRun.Status.FAILED
             run.error = str(exc)
-            raise CommandError(str(exc)) from exc
+            run.error_code = exc.code
+            failure = str(exc)
         except Exception as exc:
             run.status = ScrapeRun.Status.PARTIAL if run.products_collected else ScrapeRun.Status.FAILED
             run.error = f"{type(exc).__name__}: collection failed; inspect local logs."
+            run.error_code = "internal_error"
+            if current_result is not None and current_result["status"] == "pending":
+                current_result.update(status="failed", error_code=run.error_code, error=run.error)
             logger.exception("Retailer collection failed: %s", retailer.slug)
-            raise CommandError(run.error) from exc
+            failure = run.error
+        except KeyboardInterrupt:
+            run.status = ScrapeRun.Status.PARTIAL if run.products_collected else ScrapeRun.Status.FAILED
+            run.error_code, run.error = "interrupted", "Collection interrupted by operator."
+            raise
         finally:
             if client:
+                count = getattr(client, "request_count", 0)
+                run.request_count = count if isinstance(count, int) else 0
                 client.close()
             run.completed_at = timezone.now()
             run.save()
-        self.stdout.write(self.style.SUCCESS(f"Stored {run.products_collected} observations."))
+        self.save_report(run, options["report_dir"])
+        if failure:
+            raise CommandError(f"Run #{run.pk} ({run.status}, {run.error_code}): {failure}")
+        self.stdout.write(self.style.SUCCESS(f"Run #{run.pk}: stored {run.products_collected} observations in {run.request_count} HTTP request(s)."))

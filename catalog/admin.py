@@ -14,5 +14,15 @@ class ListingAdmin(admin.ModelAdmin):
     search_fields = ["original_title"]
     list_select_related = ["retailer"]
 
-admin.site.register([Retailer, Category, PriceHistory, ScrapeRun])
+@admin.register(ScrapeRun)
+class ScrapeRunAdmin(admin.ModelAdmin):
+    list_display = ["id", "retailer", "status", "products_collected", "request_count", "error_code", "started_at"]
+    list_filter = ["retailer", "status", "error_code"]
+    readonly_fields = ["retailer", "started_at", "completed_at", "products_collected", "request_count", "error_code", "error", "results"]
+    list_select_related = ["retailer"]
+
+    def has_add_permission(self, request):
+        return False
+
+admin.site.register([Retailer, Category, PriceHistory])
 admin.site.site_header = "DaamRadar administration"

@@ -2,7 +2,7 @@
 
 A local-first Pakistani grocery discovery and listed-price comparison MVP, built with Python, Django 5.2 LTS, Django REST Framework, Django Templates, Bootstrap 5, and vanilla JavaScript.
 
-**Data status:** the local database contains three real, dated Jalal Sons observations collected on 18 October 2026: Olpers Milk 1Ltr (PKR 350), Olpers Milk 1.5Ltr (PKR 518), and Nestle Everyday Milk 180Ml (PKR 44). These are not real-time quotes or delivery guarantees. One intermediate run timed out; a later manual invocation completed the batch. The 12 seeded products and 36 seeded listings remain clearly labeled fictional demo data. See [the source investigation](docs/retailer-review.md).
+**Data status:** three Jalal Sons listings were collected on 18 October and refreshed on 20 October 2026: Olpers Milk 1Ltr (PKR 350), Olpers Milk 1.5Ltr (PKR 518), and Nestle Everyday Milk 180Ml (PKR 44). Each has two real observations locally. These are not real-time quotes or delivery guarantees. The 12 seeded products and 36 seeded listings remain fictional demo data. See [the source investigation](docs/retailer-review.md) and [manual collection runbook](docs/collection-workflow.md).
 
 ## Run on Windows / PowerShell
 
@@ -34,7 +34,7 @@ Try `Olpers Milk 1L` in the collected catalog. The website and API default to co
 - Normalized metric quantities, brand aliases, pack counts, variant and packaging guards, GTIN checks, RapidFuzz ranking, and conservative canonical linking.
 - Atomic listing upserts with a history observation for every check, even if the price is unchanged.
 - Read-only REST API, administration interface, SQLite default, and environment-based PostgreSQL configuration.
-- Collection framework: bounded requests, contact-identifying user agent, fail-closed robots checks, crawl delays, no redirects/retries/access bypass, parser errors, manual management command, and audit trail.
+- Collection framework: bounded requests, fixed identifying user agent, fail-closed robots, crawl delays, one delayed retry for timeouts only, no access-denial retries, structured errors, per-URL reports, and overlap protection.
 - A manual Jalal Sons public-HTML adapter, with three actual imported observations. Naheed's source-format parser is retained offline because its collector request returned 403. Springs and Al-Fatah remain disabled.
 - Synthetic and minimal factual-extract fixture tests, with provenance. Source descriptions, images, session data, and unrelated configuration are not imported.
 
@@ -79,7 +79,18 @@ Jalal Sons has a limited manual adapter. No scheduler, Celery, or cron job is ac
 .\.venv\Scripts\python.exe manage.py scrape jalal-sons --url 'https://www.jalalsons.com.pk/product/olpers-milk-1ltr-2809398'
 ```
 
-The command reads robots, then the explicit product page, and records a fresh observation. It stops without automatic retry on denial, redirect, timeout, unsupported format, or challenge. Three listings have been imported locally; an intermediate connection timeout was followed by a successful later manual invocation. The source needs more reliability validation before scheduling. Naheed, Springs, and Al-Fatah remain blocked even if their configuration flags are changed.
+The command checks robots and records fresh observations. Only timeout exceptions get one delayed additional attempt; access denials, redirects, HTTP errors, and challenges stop immediately. Parser errors preserve the previous price and check time. Naheed, Springs, and Al-Fatah remain disabled at the adapter level. The three Jalal Sons records were refreshed successfully on 20 October in four HTTP requests, with no duplicate listings. See the [runbook](docs/collection-workflow.md) for detailed behavior and configuration.
+
+For repeatable manual collection:
+
+```powershell
+# Preview the saved three-product batch without making requests or writing data:
+.\.venv\Scripts\python.exe manage.py scrape jalal-sons --batch jalal-sons-basics --dry-run
+# Refresh existing stale observations; do nothing when all are fresh:
+.\.venv\Scripts\python.exe manage.py scrape jalal-sons --refresh-existing --stale-only --report-dir reports
+```
+
+Reports are written as `reports/scrape-<run-id>.json` and remain local. After pulling this change, run `manage.py migrate` for the structured run fields and the one-active-run-per-retailer constraint. No scheduler is activated.
 
 For a fresh setup, configure `.env` with `SCRAPING_ENABLED=true` and `SCRAPER_CONTACT` as a monitored email or public HTTPS project/contact URL. Enable the reviewed source only:
 
@@ -139,4 +150,4 @@ docs/                     Architecture and dated source investigation
 
 The foundation and first factual-price import are functional. Next, improve Jalal Sons request reliability and validate more exact product pages, verify location-specific semantics through a supported route, and establish another reliable source to compare the same SKU. Naheed needs its denied collector access resolved; its identity must not be changed to evade the denial. Broader reuse arrangements and a safe frequency must be established before publishing a large dataset or scheduling collection.
 
-Current limits: three real listings from one retailer; intermittent connection timeout observed; delivery area unverified; no real cross-retailer comparison yet; no scheduler, trend chart, checkout/delivery, or location selector. Search scores at most 1,000 candidates; replace this bounded small-catalog approach as data grows. Matching needs broader brand/variant coverage and review tools. Browser layout/JavaScript and PostgreSQL need separate runtime validation.
+Current limits: three real listings from one retailer; sustained reliability unproven despite a successful refresh; delivery area unverified; no real cross-retailer comparison yet. Cartpk and Olpers Mart were investigated as possible second sources but not enabled. There is no scheduler, trend chart, checkout/delivery, or location selector. Search scores at most 1,000 candidates; replace this bounded approach as data grows. Matching needs broader coverage and review tools. Browser layout/JavaScript and PostgreSQL need separate runtime validation.

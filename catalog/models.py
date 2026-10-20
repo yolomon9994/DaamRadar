@@ -132,6 +132,10 @@ class ScrapeRun(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.RUNNING)
     products_collected = models.PositiveIntegerField(default=0)
     error = models.TextField(blank=True)
+    error_code = models.CharField(max_length=40, blank=True)
+    request_count = models.PositiveIntegerField(default=0)
+    results = models.JSONField(default=list, blank=True, help_text="Requested URLs and their stored, failed, or pending outcomes.")
 
     class Meta:
         ordering = ["-started_at"]
+        constraints = [models.UniqueConstraint(fields=["retailer"], condition=models.Q(status="running"), name="one_running_scrape_per_retailer")]

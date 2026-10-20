@@ -67,7 +67,7 @@ class ParserTests(SimpleTestCase):
                 parse_product_html(html, "https://alfatah.pk/products/example")
 
 
-@override_settings(SCRAPER_CONTACT="test@example.com", SCRAPER_DELAY_SECONDS=5)
+@override_settings(SCRAPER_CONTACT="test@example.com", SCRAPER_DELAY_SECONDS=5, SCRAPER_TIMEOUT_RETRIES=0)
 class ClientTests(SimpleTestCase):
     @override_settings(SCRAPER_CONTACT="https://github.com/example/project")
     def test_public_project_url_is_supported_as_crawler_identity(self):

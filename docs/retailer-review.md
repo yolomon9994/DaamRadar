@@ -1,6 +1,6 @@
 # Retailer access investigation
 
-Reviewed 18 October 2026. These are point-in-time observations from this environment. Public crawler rules and technical reachability do not establish a general license to reuse a website or its contents. The current collector is a small, manually invoked prototype that records factual product/offer fields only.
+Initial review: 18 October 2026; reliability and candidate-source follow-up: 20 October 2026. These are point-in-time observations from this environment. Public crawler rules and technical reachability do not establish a general license to reuse a website or its contents. The current collector is a small, manually invoked prototype that records factual product/offer fields only.
 
 ## Outcome
 
@@ -14,7 +14,14 @@ Three real observations were imported through the tested Jalal Sons collector:
 
 Each page reported `InStock` in its public JSON-LD. Exact check times are stored in the local database. These are dated observations, not guaranteed current prices or delivery quotes. No branch/location was selected; every record says delivery area is unverified.
 
-An intermediate two-product attempt timed out and is recorded as blocked. A later manual invocation with the same crawler identity and limits successfully collected those pages. The client has no automatic retry loop. Reliability still needs further validation before a full catalog or scheduling.
+An intermediate two-product attempt on 18 October timed out and is recorded as blocked under the original error model. A later manual invocation with the same identity completed those pages. On 20 October, run #5 refreshed all three existing records in four HTTP requests; prices were unchanged, and each listing now has two real observations. The updated client permits at most one delayed retry for timeout exceptions only. Access denials and HTTP errors never retry. See the [collection runbook](collection-workflow.md).
+
+## Second-source follow-up, 20 October 2026
+
+- **Cartpk:** [robots](https://www.cartpk.com/robots.txt) permits ordinary public product paths and specifies a five-second delay. Its public footer linked `/terms-conditions/`, which redirected to the canonical [terms page](https://www.cartpk.com/terms-conditions); the canonical address was reviewed separately. The reviewed text covers delivery/refunds and did not state an explicit factual-price scraping prohibition. An identified request retrieved the public [Olper's 1L page](https://www.cartpk.com/olper-s-milk-full-cream-milk-1ltr), but the inspected JSON-LD could not be decoded. A follow-up attempt to inspect price fields failed with `ConnectionError`. No adapter was enabled, no malformed payload was repaired or guessed, and no prices were imported. A strict parser and reliable direct retrieval remain unvalidated. Terms/robots do not constitute a general reuse license.
+- **Olpers Mart:** public robots and homepage were accessible and contained exact product links. Its [terms](https://olpersmart.pk/terms-and-condition) include restrictions on business use and third-party use/notification, as well as website-material reuse. No product collector was enabled and no price records were imported. Clarify the applicable access/reuse basis before pursuing this source.
+
+Naheed's denied collector was not retried or given a different identity. Springs and Al-Fatah remain disabled. There is still no real cross-retailer comparison, and delivery areas remain unverified.
 
 | Source | Actual observations | Current decision |
 | --- | --- | --- |

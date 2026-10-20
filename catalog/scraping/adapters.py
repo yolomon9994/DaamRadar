@@ -24,16 +24,23 @@ class PublicProductAdapter:
     path_pattern = ""
     area_note = ""
 
-    def collect(self, client, url):
+    def validate_url(self, url):
         parsed = urlparse(url)
         if (f"{parsed.scheme}://{parsed.netloc}" != self.origin or parsed.username
                 or parsed.query or parsed.fragment or not re.fullmatch(self.path_pattern, parsed.path)):
-            raise CollectionError("Provide an exact public product URL on this retailer's HTTPS origin, without query parameters.")
+            raise CollectionError("Provide an exact public product URL on this retailer's HTTPS origin, without query parameters.", code="invalid_input")
+        return parsed
+
+    def collect(self, client, url):
+        parsed = self.validate_url(url)
         html = client.get_html(url)
-        item = parse_product_html(html, url)
+        try:
+            item = parse_product_html(html, url)
+        except CollectionError as exc:
+            raise CollectionError(str(exc), code="parse_error") from exc
         headings = {normalize_text(node.get_text(" ", strip=True)) for node in BeautifulSoup(html, "html.parser").select("h1")}
         if normalize_text(item.title) not in headings:
-            raise CollectionError("Product heading and structured title disagree; source layout needs review.")
+            raise CollectionError("Product heading and structured title disagree; source layout needs review.", code="parse_error")
         # Stable URL identity; no descriptions, retailer imagery, cookies, or page configuration retained.
         return replace(item, external_id=parsed.path.strip("/"), image="", delivery_area=self.area_note)
 
