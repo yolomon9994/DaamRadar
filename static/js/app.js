@@ -15,45 +15,29 @@ window.addEventListener("pageshow", () => {
   });
 });
 
-let historyController;
-document.querySelectorAll(".history-button").forEach((button) => {
-  button.addEventListener("click", async () => {
-    if (historyController) historyController.abort();
-    historyController = new AbortController();
-    const output = document.getElementById("history-output");
-    output.textContent = "Loading recorded prices…";
-    output.setAttribute("aria-busy", "true");
-    try {
-      const response = await fetch(button.dataset.historyUrl, {headers: {Accept: "application/json"}, signal: historyController.signal});
-      if (!response.ok) throw new Error("History unavailable");
-      const data = await response.json();
-      output.replaceChildren();
-      const heading = document.createElement("h3");
-      heading.textContent = `${button.dataset.retailer} · recorded observations`;
-      output.append(heading);
-      if (!data.results.length) {
-        output.append(document.createTextNode("No observations have been recorded yet."));
-        return;
-      }
-      const list = document.createElement("ul");
-      list.className = "history-list";
-      data.results.forEach((record) => {
-        const item = document.createElement("li");
-        const date = new Date(record.checked_at).toLocaleString("en-PK", {timeZone: "Asia/Karachi"});
-        item.textContent = `${date} PKT — Rs. ${Number(record.price).toLocaleString("en-PK")} ${record.is_demo ? "(demo)" : ""}`;
-        list.append(item);
-      });
-      output.append(list);
-      if (data.next) {
-        const next = document.createElement("a");
-        next.href = data.next;
-        next.textContent = "Older observations (JSON) →";
-        output.append(next);
-      }
-    } catch (error) {
-      if (error.name !== "AbortError") output.textContent = "We couldn’t load price history. Please select the retailer to try again.";
-    } finally {
-      output.removeAttribute("aria-busy");
-    }
+// The SVG and table are server-rendered; JS only enhances series selection.
+document.querySelectorAll("[data-price-history]").forEach((section) => {
+  const toggles = [...section.querySelectorAll("[data-history-toggle]")];
+  const selectionNote = section.querySelector("[data-history-selection-note]");
+  const pointOutput = section.querySelector("[data-history-point-output]");
+  toggles.forEach((toggle) => {
+    const series = document.getElementById(toggle.dataset.historyToggle);
+    if (!series || !section.contains(series)) return;
+    toggle.hidden = false;
+    const update = () => {
+      series.style.display = toggle.checked ? "" : "none";
+      series.setAttribute("aria-hidden", String(!toggle.checked));
+      if (selectionNote) selectionNote.hidden = toggles.some((item) => !item.hidden && item.checked);
+      if (pointOutput) pointOutput.textContent = "Focus or hover over a point to inspect its observation.";
+    };
+    toggle.addEventListener("change", update);
+    update();
+  });
+  section.querySelectorAll("[data-history-point]").forEach((point) => {
+    const describe = () => {
+      if (pointOutput) pointOutput.textContent = point.getAttribute("aria-label");
+    };
+    point.addEventListener("focus", describe);
+    point.addEventListener("pointerenter", describe);
   });
 });

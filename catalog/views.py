@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404, render
 
 from .models import Category, Product, Retailer, RetailerListing
 from .services.catalog import SORTS, decorate, get_product_queryset, search_catalog, select_source
+from .services.history import price_history_chart
 
 
 def home(request):
@@ -21,7 +22,8 @@ def home(request):
 
 def product_detail(request, slug):
     product = decorate(get_object_or_404(get_product_queryset(), slug=slug))
-    return render(request, "catalog/detail.html", {"product": product, "source": "demo" if product.is_demo else "live"})
+    return render(request, "catalog/detail.html", {"product": product, "source": "demo" if product.is_demo else "live",
+                                                  "history_chart": price_history_chart(product)})
 
 
 def sources(request):
