@@ -1,6 +1,17 @@
 """Small reviewed URL sets for repeatable manual collection, never discovery crawls."""
+from .reviewed import MILK_COMPARISON_PRODUCTS, MILK_REVIEW_DATE
 
 BATCHES = {
+    "cartpk-milk-comparison": {
+        "retailer": "cartpk",
+        "reviewed_at": MILK_REVIEW_DATE,
+        "urls": ["https://www.cartpk.com" + item["cartpk_path"] for item in MILK_COMPARISON_PRODUCTS],
+    },
+    "jalal-sons-milk-comparison": {
+        "retailer": "jalal-sons",
+        "reviewed_at": MILK_REVIEW_DATE,
+        "urls": ["https://www.jalalsons.com.pk" + item["jalal_path"] for item in MILK_COMPARISON_PRODUCTS],
+    },
     "cartpk-milk-1l": {
         "retailer": "cartpk",
         "reviewed_at": "2026-10-20",

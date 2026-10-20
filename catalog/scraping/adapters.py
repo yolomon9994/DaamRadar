@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from catalog.matching.normalization import identify, match_score, normalize_text
 from .parsers import parse_product_html
 from .cartpk import parse_cartpk_html
+from .reviewed import MILK_COMPARISON_PRODUCTS
 from .types import CollectionError
 
 
@@ -62,17 +63,26 @@ class JalalSonsAdapter(PublicProductAdapter):
     path_pattern = r"/product/[a-z0-9][a-z0-9-]+-\d+"
     area_note = "Jalal Sons public catalog; delivery area unverified"
 
+    def parse_page(self, html, url):
+        item = super().parse_page(html, url)
+        expected = {entry["jalal_path"]: entry["title"] for entry in MILK_COMPARISON_PRODUCTS}.get(urlparse(url).path)
+        if expected and match_score(identify(item.title, item.brand), identify(expected)) != 100:
+            raise CollectionError("Jalal Sons title no longer identifies the reviewed product for this URL.", code="parse_error")
+        return item
+
 
 class CartpkAdapter(PublicProductAdapter):
     origin = "https://www.cartpk.com"
-    # Keep collection bounded to the one product whose markup was reviewed.
-    path_pattern = r"/olper-s-milk-full-cream-milk-1ltr"
+    # Every URL has a reviewed identity; a generic product-path pattern is insufficient.
+    reviewed_titles = {entry["cartpk_path"]: entry["title"] for entry in MILK_COMPARISON_PRODUCTS}
+    path_pattern = "(?:" + "|".join(re.escape(path) for path in reviewed_titles) + ")"
     area_note = "Cartpk public catalog; delivery area unverified"
 
     def parse_page(self, html, url):
         item = parse_cartpk_html(html, url)
-        if match_score(identify(item.title, item.brand), identify("Olpers Full Cream Milk 1L")) < 92:
-            raise CollectionError("Cartpk title no longer identifies the reviewed single 1L milk product.", code="parse_error")
+        expected = self.reviewed_titles.get(urlparse(url).path)
+        if not expected or match_score(identify(item.title, item.brand), identify(expected)) != 100:
+            raise CollectionError("Cartpk title no longer identifies the reviewed product for this URL.", code="parse_error")
         return item
 
 

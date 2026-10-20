@@ -48,7 +48,7 @@ def ingest(retailer, item, *, is_demo=False, category=None):
             brand=identity.brand, quantity=identity.quantity, unit=identity.unit, pack_count=max(1, identity.pack_count),
             variant=" ".join(sorted(identity.variants)), packaging=" ".join(sorted(identity.packaging)),
             gtin=identity.gtin, image=item.image, category=category, is_demo=is_demo,
-            illustration="milk" if "milk" in identity.name.split() else "basket")
+            illustration="milk" if {"milk", "milkpak"} & set(identity.name.split()) else "basket")
     checked_at = timezone.now()
     listing, created = RetailerListing.objects.update_or_create(retailer=retailer, external_id=item.external_id,
         delivery_area=item.delivery_area, is_demo=is_demo, defaults={"product": product, "original_title": item.title,

@@ -1,6 +1,6 @@
 # Manual collection workflow
 
-This workflow searches no external sites on behalf of visitors and activates no scheduler. Jalal Sons and Cartpk are enabled locally; Cartpk is restricted to one reviewed product URL. Use PowerShell from the project directory.
+This workflow searches no external sites on behalf of visitors and activates no scheduler. Jalal Sons and Cartpk are enabled locally; Cartpk is restricted to five reviewed product URLs. Use PowerShell from the project directory. The [five-product catalog](milk-catalog.md) documents exact pairs, dated prices and expanded batches.
 
 ## After pulling these changes
 
@@ -24,7 +24,7 @@ The tracked batch in `catalog/scraping/batches.py` contains the three previously
 .\.venv\Scripts\python.exe manage.py scrape jalal-sons --batch jalal-sons-basics --report-dir reports
 ```
 
-Global `SCRAPING_ENABLED`, the source's `collection_enabled` flag, and its `enabled` status must permit collection. The workspace has these configured for Jalal Sons and Cartpk. New checkouts default to disabled; see the README for setup. A run accepts at most ten distinct URLs, all validated before any request. Cartpk allows only its exact reviewed 1L milk URL.
+Global `SCRAPING_ENABLED`, the source's `collection_enabled` flag, and its `enabled` status must permit collection. The workspace has these configured for Jalal Sons and Cartpk. New checkouts default to disabled; see the README for setup. A run accepts at most ten distinct URLs, all validated before any request. Cartpk allows only the five exact paths in `catalog/scraping/reviewed.py`, each tied to its expected identity.
 
 For the first Cartpk import on a fresh configured checkout:
 
@@ -34,6 +34,17 @@ For the first Cartpk import on a fresh configured checkout:
 ```
 
 For later refreshes, use `scrape cartpk --refresh-existing --stale-only --report-dir reports`. The first real import was run #6 on 20 October: one PKR 360 observation in two requests (robots and product). The matcher linked it to Jalal Sons' existing 1L product without creating a duplicate canonical product. Unverified delivery areas suppress winning-retailer and savings labels, even though the listed prices are shown side by side.
+
+To add all five reviewed pairs, including missing listings:
+
+```powershell
+.\.venv\Scripts\python.exe manage.py scrape jalal-sons --batch jalal-sons-milk-comparison --dry-run
+.\.venv\Scripts\python.exe manage.py scrape cartpk --batch cartpk-milk-comparison --dry-run
+.\.venv\Scripts\python.exe manage.py scrape jalal-sons --batch jalal-sons-milk-comparison --report-dir reports
+.\.venv\Scripts\python.exe manage.py scrape cartpk --batch cartpk-milk-comparison --report-dir reports
+```
+
+Both five-URL batches use the same ordered product pairs. They preserve the old batches and do not trigger discovery requests. The source adapters reject a changed identity at any reviewed URL. `Milk Pak`/`Milkpak` and the observed missing whitespace in `Full Cream1Ltr` normalize consistently without relaxing size, pack, variant or packaging guards.
 
 ## Refresh existing observations
 
@@ -87,3 +98,5 @@ Ctrl+C marks the current run failed/partial and preserves completed observations
 The actual Jalal Sons stale-only refresh was **run #5**: three existing listings refreshed using four HTTP requests (robots plus three product pages). Prices remained PKR 350, 518, and 44. Each listing gained one real observation, for two observations per listing, and no duplicate products or listings were created. All three became fresh under the 48-hour rule. `reports/scrape-5.json` is a local artifact, not a bundled fixture. A new checkout starts without these ignored local observations/reports.
 
 The automated suite covers timeout recovery and exhaustion, post-timeout delay, immediate stopping on access errors, parser failure without stale-data mutation, targeting and dry runs, partial outcomes, JSON export, and overlap rejection. These tests use mocks and saved fixtures, not retailer requests. A single successful live refresh does not demonstrate sustained production reliability.
+
+The five-product expansion used run #7 (Jalal Sons: five stored, six requests), run #8 (Cartpk: three stored, five requests, partial after a connection failure), and run #9 (Cartpk's two unfinished URLs: two stored, three requests). All five pairs now share canonical products across the two sources; the earlier single-source Everyday listing remains. See the [catalog validation](milk-catalog.md#live-validation) for check times, counts and limitations. Run #8 remains partial as an accurate audit record; recovery does not rewrite its status or add automatic connection-error retries.

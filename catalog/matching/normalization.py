@@ -10,7 +10,8 @@ BRANDS = {"olpers": ["olper s", "olpers"], "nutella": ["nutella"],
           "surf excel": ["surf excel", "surfexcel"], "lays": ["lay s", "lays"],
           "national": ["national"], "shan": ["shan"], "tapal": ["tapal"],
           "lipton": ["lipton"], "dalda": ["dalda"], "nestle": ["nestle", "nestlé"],
-          "peek freans": ["peek freans"], "mitchells": ["mitchell s", "mitchells"]}
+          "peek freans": ["peek freans"], "mitchells": ["mitchell s", "mitchells"],
+          "nurpur": ["nurpur"], "haleeb": ["haleeb"]}
 SIZE_RE = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)\s*(kilograms?|kgs?|grams?|gms?|gm|g|millilit(?:er|re)s?|ml|lit(?:er|re)s?|ltr?s?|l|pcs?|pieces?)\b")
 VARIANT_WORDS = {"chocolate", "strawberry", "vanilla", "banana", "mango", "orange", "lemon", "lime",
                  "masala", "salted", "plain", "classic", "barbecue", "bbq", "chilli", "chili", "mint",
@@ -29,6 +30,10 @@ PACK_RE = re.compile(
 def normalize_text(text):
     text = unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode().lower()
     text = re.sub(r"[’']", "", text)
+    # Observed Milk Pak spelling and Nurpur's missing space in "Full Cream1Ltr".
+    # Keep these aliases narrow; never remove arbitrary variant/packaging words.
+    text = re.sub(r"\bmilk[ -]+pak\b", "milkpak", text)
+    text = re.sub(r"\bfull[ -]?cream(?=\d+(?:\.\d+)?\s*(?:ml|l(?:tr|itre|iter)?s?)\b)", "fullcream ", text)
     for pattern, replacement in [(r"\blow[ -]fat\b", "lowfat"), (r"\blactose[ -]free\b", "lactosefree"),
                                  (r"\bsugar[ -]free\b", "sugarfree"), (r"\bwhole[ -]wheat\b", "wholewheat"),
                                  (r"\btop[ -]load\b", "topload"), (r"\bfront[ -]load\b", "frontload"),

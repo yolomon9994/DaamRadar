@@ -30,6 +30,8 @@ def parse_cartpk_html(html, page_url):
     if not title:
         raise CollectionError("Cartpk product title is empty.", code="parse_error")
     block = blocks[0]
+    if len(block.select("h1")) != 1:
+        raise CollectionError("Cartpk product heading must be inside its product block.", code="parse_error")
     if block.select('.super-attribute-select, [name^="super_attribute"], .bundle-options-container'):
         raise CollectionError("Cartpk selectable variants require a separately reviewed adapter.", code="parse_error")
     canonical = soup.select('link[rel="canonical"]')

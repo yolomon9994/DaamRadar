@@ -127,7 +127,7 @@ class Command(BaseCommand):
                     result.update(status="failed", error_code=exc.code, error=str(exc), http_status=exc.http_status)
                     raise
                 # A narrow initial classification; unfamiliar products remain uncategorized.
-                category = Category.objects.filter(slug="dairy").first() if "milk" in identify(item.title).name.split() else None
+                category = Category.objects.filter(slug="dairy").first() if {"milk", "milkpak"} & set(identify(item.title).name.split()) else None
                 listing, _ = ingest(retailer, item, category=category)
                 run.products_collected += 1
                 result.update(status="stored", listing_id=listing.pk, price=str(listing.current_price), checked_at=listing.last_checked.isoformat())
