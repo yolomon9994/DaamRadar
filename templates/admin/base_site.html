@@ -1,0 +1,9 @@
+{% extends 'admin/base_site.html' %}
+{% block nav-global %}
+{% if perms.catalog.view_retailer or perms.catalog.change_retailer %}
+{% if perms.catalog.view_retailerlisting or perms.catalog.change_retailerlisting %}
+{% if perms.catalog.view_product or perms.catalog.change_product %}
+{% if perms.catalog.view_scraperun or perms.catalog.change_scraperun %}
+<div class="collection-health-nav"><a href="{% url 'admin:catalog_collection_health' %}">Collection health</a></div>
+{% endif %}{% endif %}{% endif %}{% endif %}
+{% endblock %}

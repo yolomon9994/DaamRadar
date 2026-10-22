@@ -35,6 +35,7 @@ Try `Olpers Milk 1L` in the collected catalog. The website and API default to co
 - Atomic listing upserts with a history observation for every check, even if the price is unchanged.
 - Product price-history charts with separate retailer series, dated PKR markers, keyboard/pointer inspection, retailer filters and an exact-values table. Single observations remain single points; fictional demo histories stay labeled. SVG and table work without JavaScript. See [chart behavior and validation](docs/price-history.md).
 - Read-only REST API, administration interface, SQLite default, and environment-based PostgreSQL configuration.
+- Admin collection-health dashboard with per-source freshness, successful/latest runs, paused/running source state, a paginated stale-listing queue and recent failures/partial runs. It excludes demo data and requires the relevant model view/change permissions. See [dashboard access and behavior](docs/collection-health.md).
 - Collection framework: bounded requests, fixed identifying user agent, fail-closed robots, crawl delays, one delayed retry for timeouts only, no access-denial retries, structured errors, per-URL reports, and overlap protection.
 - Manual Jalal Sons and Cartpk public-HTML adapters, with five reviewed URL/title pairs and repeatable comparison batches. Cartpk accepts only those exact paths and requires visible price, numeric final price, and explicit PKR metadata to agree, excluding regular/reference prices. Its malformed description JSON-LD is neither repaired nor used. Naheed's parser is retained offline after a denied collector request; Springs and Al-Fatah remain disabled.
 - Synthetic and minimal factual-extract fixture tests, with provenance. Source descriptions, images, session data, and unrelated configuration are not imported.
@@ -128,6 +129,8 @@ Create your own admin credentials if needed:
 ```
 
 Visit `/admin/`. No default account or password is bundled.
+
+Choose **Collection health** in the admin header, or open `/admin/catalog/retailer/collection-health/`. It brings together stored-data freshness, source configuration, run history and listings due for another check. Loading it does not trigger collection or change records. See the [dashboard guide](docs/collection-health.md) for required permissions and freshness semantics.
 
 ## PostgreSQL and deployment
 

@@ -77,6 +77,8 @@ SCRAPER_RETRY_DELAY_SECONDS=10
 
 ## Review results
 
+Open **Collection health** from the Django admin header for per-source fresh/stale counts, latest check/successful run, running/paused state, recent issues and the paginated stale queue. The retailer filter applies across these sections. The [dashboard guide](collection-health.md) explains access and definitions. This view reads stored data; it does not start a refresh or clear a running job.
+
 The command prints its run ID and report path. Reports are named `reports/scrape-<run-id>.json`, contain only operational metadata and public product facts, and are excluded from Git. An existing report is never overwritten. JSON export failure does not discard a completed database run; the command reports that the database result remains available.
 
 Each report contains run status, start/completion times, actual HTTP request count including robots and timeout recovery, stored observation count, error code/message, and one outcome per selected URL:
