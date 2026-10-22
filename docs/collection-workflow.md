@@ -102,3 +102,22 @@ The actual Jalal Sons stale-only refresh was **run #5**: three existing listings
 The automated suite covers timeout recovery and exhaustion, post-timeout delay, immediate stopping on access errors, parser failure without stale-data mutation, targeting and dry runs, partial outcomes, JSON export, and overlap rejection. These tests use mocks and saved fixtures, not retailer requests. A single successful live refresh does not demonstrate sustained production reliability.
 
 The five-product expansion used run #7 (Jalal Sons: five stored, six requests), run #8 (Cartpk: three stored, five requests, partial after a connection failure), and run #9 (Cartpk's two unfinished URLs: two stored, three requests). All five pairs now share canonical products across the two sources; the earlier single-source Everyday listing remains. See the [catalog validation](milk-catalog.md#live-validation) for check times, counts and limitations. Run #8 remains partial as an accurate audit record; recovery does not rewrite its status or add automatic connection-error retries.
+
+## End-to-end stale refresh, 23 October 2026
+
+The preview identified six stale Jalal Sons listings and five stale Cartpk listings, with no running jobs. Both configured collectors then completed `--refresh-existing --stale-only --report-dir reports` successfully, rechecking robots with the existing named identity and respecting crawl delays.
+
+| Run | Retailer | Stored observations | HTTP requests | Result | Product check times (PKT) |
+| --- | --- | --- | --- | --- | --- |
+| #10 | Jalal Sons | 6 | 7 | Success | 23 Oct 2026, 00:11:04–00:11:29 |
+| #11 | Cartpk | 5 | 6 | Success | 23 Oct 2026, 00:11:21–00:11:42 |
+
+All eleven listed prices and in-stock labels were unchanged. Jalal Sons: Everyday 180ml 44, Olper's 1L 350, Olper's 1.5L 518, Milkpak 250ml 94, Nurpur 1L 358, Haleeb 1L 334 PKR. Cartpk: Olper's 1L 360, Olper's 1.5L 570, Milkpak 250ml 105, Nurpur 1L 620, Haleeb 1L 405 PKR. These are dated public catalog observations; delivery areas remain unverified.
+
+The dashboard moved from **0 fresh / 11 stale** to **11 fresh / 0 stale**, with no running jobs. Successful-run references became #10 and #11. The original partial run #8 remains in the historical issue list; it was not rewritten. Six live products and eleven live listings retained their original IDs and canonical relationships. Each refreshed listing received exactly one new historical observation, increasing real history from seventeen to twenty-eight. Existing history, demo data and source settings were unchanged.
+
+A before/after audit compared stored records and JSON reports, including per-URL outcomes, request counts, prices and timestamps. Local request checks confirmed the admin dashboard, all six collected product pages, the product/history APIs and chart point/table counts reflect the stored observations. The stored-data admin preview used an unsaved user; authentication and permissions were checked in the dashboard tests. No winning-retailer labels were introduced for unverified areas.
+
+An immediate second stale-only invocation for each source was checked with HTTP requests mocked to fail: both were genuine no-ops, making zero requests, creating zero runs and adding zero history. The 43 relevant collection-workflow, dashboard and chart tests passed. No application-code changes, dependency additions, schema migration or scheduler were needed for this operation.
+
+Local audit artifacts are ignored by Git: `reports/scrape-10.json`, `reports/scrape-11.json`, `reports/refresh-before-20261022T191032.json` and `reports/refresh-validation-20261022T191032.json`. The audit filenames use UTC; 22 October 19:10 UTC falls on **23 October in Pakistan**. A new checkout does not include the local observations or reports.

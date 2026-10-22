@@ -4,6 +4,8 @@ A local-first Pakistani grocery discovery and listed-price comparison MVP, built
 
 **Data status:** five reviewed milk products now have listed prices from both Jalal Sons and Cartpk: Olper's 1L/1.5L, Nestle Milkpak 250ml, Nurpur 1L and Haleeb 1L. Including the existing Jalal Sons Everyday 180ml listing, the local catalog contains six real products and eleven real listings. Prices are dated observations, not real-time quotes or delivery guarantees. Delivery areas remain unverified, so no winning retailer or savings claim is shown. The 12 seeded products and 36 seeded listings remain fictional demo data. See the [five-product catalog and collection commands](docs/milk-catalog.md), [source investigation](docs/retailer-review.md) and [manual collection runbook](docs/collection-workflow.md).
 
+The latest manual refresh was verified on **23 October 2026**: all eleven collected listings refreshed successfully, adding eleven real history observations with no duplicate products/listings. Prices were unchanged; the dashboard showed eleven fresh and zero stale listings immediately afterward. See the [dated refresh audit](docs/collection-workflow.md#end-to-end-stale-refresh-23-october-2026). Freshness changes with time; a new checkout must collect its own observations.
+
 ## Run on Windows / PowerShell
 
 Python 3.12 or 3.13 is recommended. The current workspace has a Python 3.13 virtual environment, installed dependencies, migrations applied, and demo data loaded.
