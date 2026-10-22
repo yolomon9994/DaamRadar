@@ -39,6 +39,7 @@ Try `Olpers Milk 1L` in the collected catalog. The website and API default to co
 - Read-only REST API, administration interface, SQLite default, and environment-based PostgreSQL configuration.
 - Admin collection-health dashboard with per-source freshness, successful/latest runs, paused/running source state, a paginated stale-listing queue and recent failures/partial runs. It excludes demo data and requires the relevant model view/change permissions. See [dashboard access and behavior](docs/collection-health.md).
 - Collection framework: bounded requests, fixed identifying user agent, fail-closed robots, crawl delays, one delayed retry for timeouts only, no access-denial retries, structured errors, per-URL reports, and overlap protection.
+- A manual `refresh_prices` command checks stale existing listings from Jalal Sons and then Cartpk, retains per-source audit/report details, and prints a combined summary. Fresh data is skipped; retailer errors produce a nonzero exit after the other source is attempted. See [usage and outcomes](docs/refresh-prices.md).
 - Manual Jalal Sons and Cartpk public-HTML adapters, with five reviewed URL/title pairs and repeatable comparison batches. Cartpk accepts only those exact paths and requires visible price, numeric final price, and explicit PKR metadata to agree, excluding regular/reference prices. Its malformed description JSON-LD is neither repaired nor used. Naheed's parser is retained offline after a denied collector request; Springs and Al-Fatah remain disabled.
 - Synthetic and minimal factual-extract fixture tests, with provenance. Source descriptions, images, session data, and unrelated configuration are not imported.
 
@@ -88,6 +89,10 @@ The command checks robots and records fresh observations. Only timeout exception
 For repeatable manual collection:
 
 ```powershell
+# Preview stale existing URLs for both reviewed retailers:
+.\.venv\Scripts\python.exe manage.py refresh_prices --dry-run
+# Refresh both sources sequentially with their individual reports:
+.\.venv\Scripts\python.exe manage.py refresh_prices --report-dir reports
 # Preview the saved three-product batch without making requests or writing data:
 .\.venv\Scripts\python.exe manage.py scrape jalal-sons --batch jalal-sons-basics --dry-run
 # Refresh existing stale observations; do nothing when all are fresh:

@@ -22,6 +22,7 @@ class UnavailableAdapter:
 
 class PublicProductAdapter:
     enabled = True
+    reason = "Source collection is paused; review access before enabling it."
     origin = ""
     path_pattern = ""
     area_note = ""

@@ -21,6 +21,9 @@ logger = logging.getLogger("catalog")
 
 class Command(BaseCommand):
     help = "Manually collect up to ten reviewed public product URLs. No scheduling or catalog crawling."
+    # Exact records owned by this invocation, also used by the sequential wrapper.
+    scrape_run = None
+    report_path = None
 
     def add_arguments(self, parser):
         parser.add_argument("retailer", choices=list(ADAPTERS))
@@ -70,9 +73,12 @@ class Command(BaseCommand):
                 report.write("\n")
         except OSError as exc:
             raise CommandError(f"Run #{run.pk} is saved in the database, but its JSON report could not be written ({type(exc).__name__}).") from exc
+        self.report_path = path
         self.stdout.write(f"Report: {path}")
 
     def handle(self, *args, **options):
+        self.scrape_run = None
+        self.report_path = None
         try:
             retailer = Retailer.objects.get(slug=options["retailer"])
         except Retailer.DoesNotExist:
@@ -108,6 +114,7 @@ class Command(BaseCommand):
             if active is None:
                 raise
             raise CommandError(f"Run #{active.pk} is already running for {retailer.name}. Inspect it before starting another collection.") from exc
+        self.scrape_run = run
         client = None
         failure = None
         current_result = None

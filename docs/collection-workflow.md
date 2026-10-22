@@ -2,6 +2,15 @@
 
 This workflow searches no external sites on behalf of visitors and activates no scheduler. Jalal Sons and Cartpk are enabled locally; Cartpk is restricted to five reviewed product URLs. Use PowerShell from the project directory. The [five-product catalog](milk-catalog.md) documents exact pairs, dated prices and expanded batches.
 
+## Refresh both reviewed sources
+
+```powershell
+.\.venv\Scripts\python.exe manage.py refresh_prices --dry-run
+.\.venv\Scripts\python.exe manage.py refresh_prices --report-dir reports
+```
+
+This refreshes stale existing listings from Jalal Sons and then Cartpk, preserving the original collector rules and individual run reports. Fresh/empty selections do no work. Expected retailer failures are summarized while the other source is still attempted; the overall command exits nonzero on errors. Ctrl+C stops before the next source. No scheduler or first-time imports are added. See the [combined-command guide](refresh-prices.md) for outcomes, setup and failure handling. Preview and report output are separate invocations; do not combine `--dry-run` with `--report-dir`.
+
 ## After pulling these changes
 
 ```powershell
