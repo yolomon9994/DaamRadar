@@ -14,4 +14,14 @@ The expansion fixtures were extracted from the exact public pages below on 20 Oc
 | `nurpur_1000.html` | https://www.jalalsons.com.pk/product/nurpur-milk-1ltr-2809394 | https://www.cartpk.com/nurpur-milk-full-cream-1ltr | 358 / 620 |
 | `haleeb_1000.html` | https://www.jalalsons.com.pk/product/haleeb-milk-1ltr-2809384 | https://www.cartpk.com/haleeb-milk-1ltr | 334 / 405 |
 
-All eight expansion extracts reported in-stock availability. Every source-derived file is a **minimal factual extract**, not a complete saved page. Descriptions, images, executable scripts, analytics, browser/session metadata, and unrelated site configuration are omitted. These snapshots test observed formats and are not current-price claims or retailer-provided licensed feeds. Tests never fetch the source websites. See the [reviewed catalog](../../../docs/milk-catalog.md) for scope and known limits.
+The eight milk expansion extracts reported in-stock availability. Six pantry extracts were added from these exact pages on 24 October 2026 with the same robots-aware named client:
+
+| Fixture suffix (both `jalal_` and `cartpk_`) | Jalal Sons public page | Cartpk public page | Observed PKR (Jalal / Cartpk) |
+| --- | --- | --- | --- |
+| `dalda_sunflower_1000.html` | https://www.jalalsons.com.pk/product/dalda-sunflower--oil-pouch-1ltr-2809005 | https://www.cartpk.com/dalda-sunflower-oil-pouch-1ltr | 609 / 630 |
+| `dalda_canola_4500.html` | https://www.jalalsons.com.pk/product/dalda-canola-oil-45l-2809029 | https://www.cartpk.com/dalda-canola-oil-4-5ltr | 2834 / 3150 |
+| `shan_biryani_50.html` | https://www.jalalsons.com.pk/product/shan-biryani-masala-50g-2808968 | https://www.cartpk.com/shan-biryani-masala-50g | 158 / 130 |
+
+All pantry extracts reported in-stock availability. Source titles are preserved, including case/whitespace, with factual surrounding markup reconstructed as above. Cartpk fixtures retain agreeing visible/final/metadata prices, explicit PKR and canonical URL. No search/category price was substituted for the product page.
+
+Every source-derived file is a **minimal factual extract**, not a complete saved page. Descriptions, images, executable scripts, analytics, browser/session metadata, and unrelated site configuration are omitted. These snapshots test observed formats and are not current-price claims or retailer-provided licensed feeds. Tests never fetch the source websites. See the [milk catalog](../../../docs/milk-catalog.md) and [pantry catalog](../../../docs/pantry-catalog.md) for scope and known limits.

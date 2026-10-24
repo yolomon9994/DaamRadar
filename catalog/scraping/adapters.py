@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from catalog.matching.normalization import identify, match_score, normalize_text
 from .parsers import parse_product_html
 from .cartpk import parse_cartpk_html
-from .reviewed import MILK_COMPARISON_PRODUCTS
+from .reviewed import REVIEWED_BY_SOURCE
 from .types import CollectionError
 
 
@@ -66,8 +66,8 @@ class JalalSonsAdapter(PublicProductAdapter):
 
     def parse_page(self, html, url):
         item = super().parse_page(html, url)
-        expected = {entry["jalal_path"]: entry["title"] for entry in MILK_COMPARISON_PRODUCTS}.get(urlparse(url).path)
-        if expected and match_score(identify(item.title, item.brand), identify(expected)) != 100:
+        reviewed = REVIEWED_BY_SOURCE["jalal-sons"].get(urlparse(url).path)
+        if reviewed and match_score(identify(item.title, item.brand), identify(reviewed["title"])) != 100:
             raise CollectionError("Jalal Sons title no longer identifies the reviewed product for this URL.", code="parse_error")
         return item
 
@@ -75,7 +75,7 @@ class JalalSonsAdapter(PublicProductAdapter):
 class CartpkAdapter(PublicProductAdapter):
     origin = "https://www.cartpk.com"
     # Every URL has a reviewed identity; a generic product-path pattern is insufficient.
-    reviewed_titles = {entry["cartpk_path"]: entry["title"] for entry in MILK_COMPARISON_PRODUCTS}
+    reviewed_titles = {path: item["title"] for path, item in REVIEWED_BY_SOURCE["cartpk"].items()}
     path_pattern = "(?:" + "|".join(re.escape(path) for path in reviewed_titles) + ")"
     area_note = "Cartpk public catalog; delivery area unverified"
 

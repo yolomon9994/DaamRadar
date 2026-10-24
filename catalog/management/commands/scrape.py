@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -13,6 +14,7 @@ from catalog.matching.normalization import identify
 from catalog.scraping.adapters import ADAPTERS
 from catalog.scraping.batches import BATCHES
 from catalog.scraping.client import PoliteClient
+from catalog.scraping.reviewed import COLLECTION_CATEGORIES, REVIEWED_BY_SOURCE
 from catalog.scraping.types import CollectionError
 from catalog.services.ingestion import ingest
 
@@ -133,9 +135,15 @@ class Command(BaseCommand):
                 except CollectionError as exc:
                     result.update(status="failed", error_code=exc.code, error=str(exc), http_status=exc.http_status)
                     raise
-                # A narrow initial classification; unfamiliar products remain uncategorized.
-                category = Category.objects.filter(slug="dairy").first() if {"milk", "milkpak"} & set(identify(item.title).name.split()) else None
-                listing, _ = ingest(retailer, item, category=category)
+                # Classification comes from reviewed URL metadata; no broad pantry keyword guesses.
+                profile = REVIEWED_BY_SOURCE.get(retailer.slug, {}).get(urlparse(item.url).path)
+                category_slug = profile["category"] if profile else "dairy" if {"milk", "milkpak"} & set(identify(item.title).name.split()) else None
+                category = None
+                if category_slug:
+                    name, icon = COLLECTION_CATEGORIES[category_slug]
+                    category, _ = Category.objects.get_or_create(slug=category_slug, defaults={"name": name, "icon": icon})
+                listing, _ = ingest(retailer, item, category=category,
+                                    illustration=profile["illustration"] if profile else None)
                 run.products_collected += 1
                 result.update(status="stored", listing_id=listing.pk, price=str(listing.current_price), checked_at=listing.last_checked.isoformat())
                 run.save(update_fields=["results", "products_collected"])

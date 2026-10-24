@@ -17,7 +17,8 @@ VARIANT_WORDS = {"chocolate", "strawberry", "vanilla", "banana", "mango", "orang
                  "masala", "salted", "plain", "classic", "barbecue", "bbq", "chilli", "chili", "mint",
                  "skimmed", "skim", "lowfat", "lactosefree", "sugarfree", "diet", "light", "gold", "brown",
                  "white", "black", "green", "basmati", "sella", "refined", "wholewheat", "organic",
-                 "automatic", "handwash", "topload", "frontload", "supreme", "danedar", "elaichi"}
+                 "automatic", "handwash", "topload", "frontload", "supreme", "danedar", "elaichi",
+                 "sunflower", "canola", "corn", "soybean", "sindhi", "bombay", "punjabi", "beef", "chicken"}
 PACKAGING = {"pouch", "bottle", "jar", "tin", "can", "sachet", "carton", "box"}
 PACK_RE = re.compile(
     r"\b(?:pack\s*(?:of\s*)?|pk\s*)(\d+)\b"

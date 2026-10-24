@@ -1,6 +1,6 @@
 # Manual collection workflow
 
-This workflow searches no external sites on behalf of visitors and activates no scheduler. Jalal Sons and Cartpk are enabled locally; Cartpk is restricted to five reviewed product URLs. Use PowerShell from the project directory. The [five-product catalog](milk-catalog.md) documents exact pairs, dated prices and expanded batches.
+This workflow searches no external sites on behalf of visitors and activates no scheduler. Jalal Sons and Cartpk are enabled locally; Cartpk is restricted to eight reviewed product URLs. The [pantry expansion](pantry-catalog.md) adds three non-dairy pairs alongside the original milk pairs. Use PowerShell from the project directory. The [five-product catalog](milk-catalog.md) documents exact pairs, dated prices and expanded batches.
 
 ## Refresh both reviewed sources
 
@@ -33,7 +33,7 @@ The tracked batch in `catalog/scraping/batches.py` contains the three previously
 .\.venv\Scripts\python.exe manage.py scrape jalal-sons --batch jalal-sons-basics --report-dir reports
 ```
 
-Global `SCRAPING_ENABLED`, the source's `collection_enabled` flag, and its `enabled` status must permit collection. The workspace has these configured for Jalal Sons and Cartpk. New checkouts default to disabled; see the README for setup. A run accepts at most ten distinct URLs, all validated before any request. Cartpk allows only the five exact paths in `catalog/scraping/reviewed.py`, each tied to its expected identity.
+Global `SCRAPING_ENABLED`, the source's `collection_enabled` flag, and its `enabled` status must permit collection. The workspace has these configured for Jalal Sons and Cartpk. New checkouts default to disabled; see the README for setup. A run accepts at most ten distinct URLs, all validated before any request. Cartpk allows only the eight exact paths in `catalog/scraping/reviewed.py`, each tied to its expected identity.
 
 For the first Cartpk import on a fresh configured checkout:
 
@@ -56,6 +56,8 @@ To add all five reviewed pairs, including missing listings:
 Both five-URL batches use the same ordered product pairs. They preserve the old batches and do not trigger discovery requests. The source adapters reject a changed identity at any reviewed URL. `Milk Pak`/`Milkpak` and the observed missing whitespace in `Full Cream1Ltr` normalize consistently without relaxing size, pack, variant or packaging guards.
 
 ## Refresh existing observations
+
+For first-time non-dairy imports, use `--batch jalal-sons-pantry-comparison` or `--batch cartpk-pantry-comparison` with the corresponding source. Each contains the three reviewed oil/spice URLs. See the [pantry catalog](pantry-catalog.md) for previews, import commands, dated prices and runs #12/#13. `refresh_prices` automatically includes these saved URLs on later stale refreshes, subject to the unchanged ten-URL cap.
 
 ```powershell
 .\.venv\Scripts\python.exe manage.py scrape jalal-sons --refresh-existing --stale-only --report-dir reports

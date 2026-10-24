@@ -41,7 +41,7 @@ These batches also create missing listings; `--refresh-existing` alone cannot ex
 
 ## Identity and extraction boundaries
 
-`catalog/scraping/reviewed.py` defines five exact URL pairs and expected product titles. Cartpk accepts only these five paths. Both adapters check the reviewed title for these URLs after parsing; changed names, quantities, packs, packaging or variants fail instead of silently importing a different SKU. Titles must have identical normalized name tokens, alongside the existing hard identity checks. Unreviewed Jalal Sons URLs retain the existing strict JSON-LD behavior.
+`catalog/scraping/reviewed.py` retains these five milk URL pairs and expected titles inside the full registry. As of 24 October, Cartpk also accepts the three exact paths in the [pantry expansion](pantry-catalog.md), for eight total. Both adapters check the reviewed title for these URLs after parsing; changed names, quantities, packs, packaging or variants fail instead of silently importing a different SKU. Titles must have identical normalized name tokens, alongside the existing hard identity checks. Unreviewed Jalal Sons URLs retain the existing strict JSON-LD behavior.
 
 The matcher adds the observed Nurpur/Haleeb brand names, treats `Milk Pak` as the spelling `Milkpak`, and recognizes the missing space in `Full Cream1Ltr`. These narrow rules do not equate Milkpak with cream or Active Milk, Haleeb with Haleeb Asli, or a single unit with a carton. The fixtures retain the source titles rather than rewriting them to force a match. Milkpak is classified under dairy and uses the milk illustration.
 

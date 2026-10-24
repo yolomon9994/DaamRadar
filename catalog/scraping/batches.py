@@ -1,7 +1,17 @@
 """Small reviewed URL sets for repeatable manual collection, never discovery crawls."""
-from .reviewed import MILK_COMPARISON_PRODUCTS, MILK_REVIEW_DATE
+from .reviewed import MILK_COMPARISON_PRODUCTS, MILK_REVIEW_DATE, PANTRY_COMPARISON_PRODUCTS, PANTRY_REVIEW_DATE
 
 BATCHES = {
+    "jalal-sons-pantry-comparison": {
+        "retailer": "jalal-sons",
+        "reviewed_at": PANTRY_REVIEW_DATE,
+        "urls": ["https://www.jalalsons.com.pk" + item["jalal_path"] for item in PANTRY_COMPARISON_PRODUCTS],
+    },
+    "cartpk-pantry-comparison": {
+        "retailer": "cartpk",
+        "reviewed_at": PANTRY_REVIEW_DATE,
+        "urls": ["https://www.cartpk.com" + item["cartpk_path"] for item in PANTRY_COMPARISON_PRODUCTS],
+    },
     "cartpk-milk-comparison": {
         "retailer": "cartpk",
         "reviewed_at": MILK_REVIEW_DATE,
