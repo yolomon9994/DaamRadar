@@ -52,6 +52,8 @@ def ingest(retailer, item, *, is_demo=False, category=None, illustration=None):
     checked_at = timezone.now()
     listing, created = RetailerListing.objects.update_or_create(retailer=retailer, external_id=item.external_id,
         delivery_area=item.delivery_area, is_demo=is_demo, defaults={"product": product, "original_title": item.title,
-        "url": item.url, "current_price": price, "currency": "PKR", "availability": item.availability, "last_checked": checked_at})
+        "url": item.url, "current_price": price, "currency": "PKR", "availability": item.availability, "last_checked": checked_at,
+        # Current adapters have no verified location context. Evidence for an earlier check cannot carry forward.
+        "delivery_area_key": "", "area_evidence_url": "", "area_verified_at": None})
     PriceHistory.objects.create(listing=listing, price=price, checked_at=checked_at)
     return listing, created

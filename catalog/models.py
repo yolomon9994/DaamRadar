@@ -1,8 +1,11 @@
 from datetime import timedelta
 from decimal import Decimal
+import re
+from urllib.parse import urlparse
 
 from django.conf import settings
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, RegexValidator, URLValidator
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -91,18 +94,48 @@ class RetailerListing(models.Model):
     availability = models.CharField(max_length=20, choices=Availability.choices, default=Availability.UNKNOWN)
     last_checked = models.DateTimeField(default=timezone.now)
     delivery_area = models.CharField(max_length=200, blank=True)
+    delivery_area_key = models.SlugField(max_length=100, blank=True, validators=[RegexValidator(r"^[a-z0-9]+(?:-[a-z0-9]+)*$", "Use lowercase words or numbers separated by hyphens.")], help_text="Shared identifier for exactly the same delivery scope across retailers; a city name alone is not proof.")
+    area_evidence_url = models.URLField(max_length=1000, blank=True, help_text="Public retailer evidence tying this listing's price and stock to this exact area at its check time. General delivery advertising is insufficient.")
+    area_verified_at = models.DateTimeField(null=True, blank=True, help_text="When this observation's area was verified; must be on or after its last check. A new import clears verification.")
     is_demo = models.BooleanField(default=False, db_index=True)
 
     class Meta:
         ordering = ["current_price", "retailer__name"]
         constraints = [models.UniqueConstraint(fields=["retailer", "external_id", "delivery_area", "is_demo"], name="unique_retailer_listing"),
                        models.CheckConstraint(condition=models.Q(current_price__gt=0), name="positive_listing_price"),
-                       models.CheckConstraint(condition=models.Q(currency="PKR"), name="listing_pkr_only")]
+                       models.CheckConstraint(condition=models.Q(currency="PKR"), name="listing_pkr_only"),
+                       models.CheckConstraint(condition=(
+                           models.Q(delivery_area_key="", area_evidence_url="", area_verified_at__isnull=True)
+                           | (models.Q(is_demo=False, area_verified_at__isnull=False)
+                              & ~models.Q(delivery_area="") & ~models.Q(delivery_area_key="")
+                              & ~models.Q(area_evidence_url=""))), name="complete_listing_area_evidence")]
         indexes = [models.Index(fields=["product", "current_price"])]
 
     @property
     def is_stale(self):
         return self.last_checked < timezone.now() - timedelta(hours=settings.PRICE_STALE_HOURS)
+
+    @property
+    def area_is_verified(self):
+        """Verification belongs to an observation, never merely to a matching label."""
+        if self.is_demo or not self.retailer_id or not self.last_checked or not all((self.delivery_area and self.delivery_area.strip(), self.delivery_area_key, self.area_evidence_url, self.area_verified_at)):
+            return False
+        if re.search(r"\b(unverified|unspecified|unknown)\b", self.delivery_area, re.I) or not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", self.delivery_area_key):
+            return False
+        try:
+            URLValidator(schemes=["https"])(self.area_evidence_url)
+            evidence, origin = urlparse(self.area_evidence_url), urlparse(self.retailer.website)
+            return (evidence.netloc == origin.netloc
+                    and not evidence.username and not evidence.password and not evidence.fragment
+                    and self.last_checked <= self.area_verified_at <= timezone.now())
+        except (ObjectDoesNotExist, ValidationError, ValueError, TypeError):
+            return False
+
+    def clean(self):
+        super().clean()
+        supplied = any((self.delivery_area_key, self.area_evidence_url, self.area_verified_at))
+        if supplied and not self.area_is_verified:
+            raise ValidationError("Area verification requires a delivery area, a shared scope key, a public HTTPS evidence URL on this retailer's origin, and a verification time between the observation's last check and now. Demo records cannot be verified.")
 
     def __str__(self):
         return f"{self.retailer}: {self.original_title}"

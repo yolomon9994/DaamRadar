@@ -32,10 +32,16 @@ class ProductSourceFilter(admin.SimpleListFilter):
 
 @admin.register(RetailerListing)
 class ListingAdmin(admin.ModelAdmin):
-    list_display = ["original_title", "retailer", "current_price", "availability", "last_checked", "is_demo"]
+    list_display = ["original_title", "retailer", "current_price", "availability", "last_checked", "area_is_verified", "is_demo"]
     list_filter = ["retailer", "is_demo", ProductSourceFilter, "availability"]
     search_fields = ["original_title"]
     list_select_related = ["retailer"]
+    readonly_fields = ["area_is_verified"]
+    fieldsets = [
+        (None, {"fields": ["product", "retailer", "external_id", "original_title", "url", "current_price", "currency", "availability", "last_checked", "is_demo"]}),
+        ("Delivery evidence", {"fields": ["delivery_area", "delivery_area_key", "area_evidence_url", "area_verified_at", "area_is_verified"],
+                               "description": "Record evidence for this particular price/stock observation and exact delivery scope. Homepage delivery claims, store addresses and generic InStock markup are insufficient. Current collectors leave this unverified."}),
+    ]
 
 @admin.register(ScrapeRun)
 class ScrapeRunAdmin(admin.ModelAdmin):

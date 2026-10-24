@@ -57,6 +57,10 @@ The named robots-aware collector rechecked canonical terms and exact product pag
 
 Runs #12 and #13 each stored three observations in four requests. All earlier records were preserved; the catalog now has nine real products and seventeen listings, including the earlier single-source Everyday record. Cartpk's actual Biryani product price was 130, independently verified against visible/final/PKR metadata rather than a search/category snapshot. Preliminary connection closures stopped those review requests without automatic retries; separate unchanged-identity reviews succeeded. Both actual import runs succeeded. See the [pantry catalog](pantry-catalog.md) for exact URLs, dated prices, fixture evidence and scope. No general reuse license or retailer endorsement is claimed.
 
+## Delivery-area follow-up, 24 October 2026
+
+The [24 October delivery follow-up](delivery-areas.md) distinguishes public delivery advertising from evidence for a collected price/stock observation. Cartpk advertises Karachi service and marks the reviewed milk item shippable outside Karachi; Jalal Sons' reviewed page refers to Lahore and its terms make availability location-dependent. A common delivery scope has not been verified. No area was backfilled from these claims, no new collector was enabled, and current imports remain area-unverified.
+
 ## Open source and data reuse
 
 An open-source code license governs rights in the code licensed by its authors. It does not grant rights in another site's content. Nonprofit use is not a blanket exception to copyright, contract terms, access restrictions, or applicable law. Factual prices differ from authored descriptions and photographs, but that alone does not settle every source-specific or jurisdiction-specific issue. This engineering review is not a determination of legal rights for public launch or bulk collection.

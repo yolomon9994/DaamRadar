@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, render
 from .models import Category, Product, Retailer, RetailerListing
 from .services.catalog import SORTS, decorate, get_product_queryset, search_catalog, select_source
 from .services.history import price_history_chart
+from .services.delivery_review import DELIVERY_REVIEWS
 
 
 def home(request):
@@ -27,7 +28,10 @@ def product_detail(request, slug):
 
 
 def sources(request):
+    retailers = list(Retailer.objects.annotate(collected_count=Count("listings", filter=Q(listings__is_demo=False, listings__product__is_demo=False))))
+    for retailer in retailers:
+        retailer.delivery_review = DELIVERY_REVIEWS.get(retailer.slug)
     return render(request, "catalog/sources.html", {
-        "retailers": Retailer.objects.annotate(collected_count=Count("listings", filter=Q(listings__is_demo=False, listings__product__is_demo=False))),
+        "retailers": retailers,
         "collected_count": RetailerListing.objects.filter(is_demo=False, product__is_demo=False).count(),
     })

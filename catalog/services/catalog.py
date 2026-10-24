@@ -20,14 +20,20 @@ def select_source(params):
 
 def decorate(product):
     product.offers = list(product.listings.all())
-    # Compare only like source/area offers. Location-free listings are a separate group.
+    # A shared label or retailer-wide delivery claim does not verify a price's area.
     cutoff = timezone.now() - timedelta(hours=settings.PRICE_STALE_HOURS)
     eligible = [o for o in product.offers if o.is_demo == product.is_demo
                 and o.availability == "in_stock" and o.last_checked >= cutoff]
-    areas = {o.delivery_area for o in eligible}
+    verified = {o.id: o.area_is_verified for o in product.offers}
+    areas = {o.delivery_area_key if verified[o.id] else o.delivery_area for o in eligible}
     product.has_mixed_areas = len(areas) > 1
-    area_known = len(areas) == 1 and all(area and "unverified" not in area.lower() for area in areas)
+    product.has_unverified_areas = not product.is_demo and any(not verified[o.id] for o in product.offers)
+    if product.is_demo:
+        area_known = len(areas) == 1 and all(area and "unverified" not in area.lower() for area in areas)
+    else:
+        area_known = len(areas) == 1 and all(verified[o.id] for o in eligible)
     product.has_comparison = len({o.retailer_id for o in eligible}) > 1 and area_known
+    product.comparison_area = eligible[0].delivery_area if product.has_comparison and not product.is_demo else ""
     product.best_price = min((o.current_price for o in eligible), default=None)
     product.best_ids = {o.id for o in eligible if o.current_price == product.best_price} if product.has_comparison else set()
     product.offer_count = len(product.offers)
