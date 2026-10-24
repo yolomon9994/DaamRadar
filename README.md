@@ -44,6 +44,8 @@ Try `Olpers Milk 1L` in the collected catalog. The website and API default to co
 - Manual Jalal Sons and Cartpk public-HTML adapters, with eight reviewed URL/title pairs and separate milk/pantry batches. Reviewed metadata assigns categories and owned illustrations; real-only imports can create a missing category without loading demo data. Cartpk accepts only those exact paths and requires visible price, numeric final price, and explicit PKR metadata to agree, excluding regular/reference prices. Its malformed description JSON-LD is neither repaired nor used. Naheed's parser is retained offline after a denied collector request; Springs and Al-Fatah remain disabled.
 - Synthetic and minimal factual-extract fixture tests, with provenance. Source descriptions, images, session data, and unrelated configuration are not imported.
 - GitHub CI for Python 3.12/3.13 with SQLite/PostgreSQL 17: locked dependencies, Django/migration checks, fresh database migrations, offline tests and production static-file collection. See [automated checks and local reproduction](docs/continuous-integration.md).
+- Production profile and cross-platform Waitress startup, database readiness at `/health/`, and real production HTTP smoke checks in CI. See [deployment configuration and commands](docs/deployment.md).
+- Consistent SQLite backups with integrity verification and non-overwrite behavior; documented and locally validated SQLite/PostgreSQL restore procedures. See [backup/restore](docs/backups.md).
 
 ## API
 
@@ -54,6 +56,7 @@ Try `Olpers Milk 1L` in the collected catalog. The website and API default to co
 | `GET /api/categories/` | Grocery categories |
 | `GET /api/retailers/` | Retailers, availability status, and access notes |
 | `GET /api/listings/<id>/history/` | Paginated newest-first price observations |
+| `GET /health/` | Database connectivity readiness; generic 200/503 response |
 
 Product list parameters: `q`, `category` (slug), `retailer` (slug), `brand`, `source=demo|live`, `sort=relevance|price_asc|price_desc`, `page`, and `page_size` (up to 48).
 
@@ -151,9 +154,17 @@ Install PostgreSQL and create a database/user through your normal local administ
 DATABASE_URL=postgresql://daamradar:YOUR_PASSWORD@localhost:5432/daamradar
 ```
 
-Then run `manage.py migrate` against that configured database. SQLite data is not automatically transferred. To seed PostgreSQL for development, run `seed_demo` again. SQLite remains the default development database. All 157 tests passed locally with Python 3.13 against both SQLite and an isolated PostgreSQL 17.11 cluster; see [validation details](docs/continuous-integration.md#local-validation-24-october-2026).
+Then run `manage.py migrate` against that configured database. SQLite data is not automatically transferred. To seed PostgreSQL for development, run `seed_demo` again. SQLite remains the default development database. All 168 tests passed locally with Python 3.13 against both SQLite and an isolated PostgreSQL 17.11 cluster; see [deployment validation](docs/deployment.md#validation-24-october-2026).
 
-For deployment, generate a unique `DJANGO_SECRET_KEY` (for example, Python's `secrets.token_urlsafe(50)`), set `DJANGO_DEBUG=false`, explicit `DJANGO_ALLOWED_HOSTS`, appropriate HTTPS `DJANGO_CSRF_TRUSTED_ORIGINS`, `DJANGO_SECURE_SSL_REDIRECT=true`, and `DJANGO_SECURE_COOKIES=true`. Run `collectstatic --noinput` and `check --deploy`. Use an appropriate production WSGI/ASGI server with `config.wsgi:application` or `config.asgi:application` and HTTPS; Django's development server is for local use. Proxy SSL settings, HSTS, logging, backups, and shared caching depend on the hosting environment and must be configured there. No hosted deployment has been configured.
+Use the [production environment example](.env.production.example) in a separate deployment checkout. Run migration/static/deployment checks with `--settings=config.production`, then start `python -m config.serve` with the host, port and exact trusted proxy IP appropriate to the environment. The production profile requires debug off, a secret and explicit allowed hosts. HTTPS, process supervision, HSTS policy and shared caching depend on the actual host; HSTS is deliberately deferred and `check --deploy` reports that warning. The [deployment guide](docs/deployment.md) provides exact steps and proxy details. No hosted deployment has been provisioned.
+
+To exercise the production server locally using temporary data without editing `.env`:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/smoke_production.py
+# Create a new, verified backup of the current local SQLite database:
+.\.venv\Scripts\python.exe manage.py backup_sqlite backups/daamradar-2026-10-24.sqlite3
+```
 
 ## Layout
 

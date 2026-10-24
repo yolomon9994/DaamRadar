@@ -7,6 +7,7 @@ The `CI` workflow in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) r
 3. Apply all committed migrations to an empty database.
 4. Run the full test suite through the HTTP-blocking runner.
 5. Run `collectstatic` with debug disabled, exercising the production compressed manifest storage.
+6. Start the production Waitress server with disposable data and check real HTTP responses using `scripts/smoke_production.py` (see the [deployment guide](deployment.md)).
 
 Jobs have a fifteen-minute timeout, continue independently if a different matrix job fails, and cancel superseded runs for the same branch/PR. The workflow uses read-only repository permissions and does not retain checkout credentials. It performs validation only; it does not deploy, schedule collection or push commits. No project secrets are needed. The database password and Django key in the YAML are public, disposable CI values and must never be used in a deployment.
 
@@ -16,7 +17,7 @@ Jobs have a fifteen-minute timeout, continue independently if a different matrix
 
 Tests can temporarily override collection settings to exercise command behavior, but [`OfflineDiscoverRunner`](../config/test_runner.py) patches `requests.sessions.Session.send` for the entire run. An unmocked requests HTTP call raises an assertion before transport. Existing adapter tests use minimal saved factual fixtures and mocked responses, including timeout/access-denial cases. Database connections remain available for actual PostgreSQL testing. This guard targets the application's requests client; it is not an operating-system network sandbox or a restriction on pip/GitHub Actions downloads.
 
-Three CI-specific tests check database isolation/configuration, rejection of real HTTP while normal fixture mocks work, and restoration of the patch if test setup fails. The full suite currently contains 157 tests.
+Three CI-specific tests check database isolation/configuration, rejection of real HTTP while normal fixture mocks work, and restoration of the patch if test setup fails. With deployment coverage the full suite now contains 168 tests. The subsequent production smoke script is a separate process that makes loopback HTTP requests only; it does not run inside the unit-test HTTP guard.
 
 ## Running locally
 
