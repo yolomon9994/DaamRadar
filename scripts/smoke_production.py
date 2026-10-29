@@ -121,6 +121,13 @@ def main():
                               and line["standard_unit_price"]["unit"] == "L"
                               for row in basket.json()["retailers"] for line in row["lines"]),
                           "Production basket standard-unit prices")
+                    budgeted = client.get(base + "/api/basket/?source=demo&item=demo-olpers-milk-1l:2&budget=700.00", headers=headers, timeout=5)
+                    assessment = next(row for row in budgeted.json()["retailers"] if row["slug"] == "naheed")["budget_assessment"]
+                    check(budgeted.status_code == 200 and assessment["status"] == "within_budget"
+                          and assessment["remaining"] == "50.00", "Production complete-basket budget assessment")
+                    partial = client.get(base + "/api/basket/?source=demo&item=missing-product:1&budget=700.00", headers=headers, timeout=5)
+                    check(partial.status_code == 200 and all(row["budget_assessment"]["status"] == "incomplete"
+                          for row in partial.json()["retailers"]), "Production incomplete baskets withhold budget assessment")
                     preview = client.post(base + "/api/shopping-list/preview/", headers=headers, timeout=5, json={
                         "format": "daamradar-shopping-list", "version": 1, "source": "demo",
                         "exported_at": basket.json()["estimated_at"], "items": [{

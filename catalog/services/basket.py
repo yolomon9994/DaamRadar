@@ -15,7 +15,7 @@ def money(value):
     return format(value, ".2f") if value is not None else None
 
 
-def estimate_basket(items, source, unresolved=()):
+def estimate_basket(items, source, unresolved=(), budget=None):
     """Items have already been validated as unique (slug, quantity) pairs."""
     demo = source == "demo"
     checked_at = timezone.now()
@@ -27,7 +27,7 @@ def estimate_basket(items, source, unresolved=()):
     # Include retailers with this catalog's observations, even if none cover this list.
     retailers = Retailer.objects.filter(listings__is_demo=demo, listings__product__is_demo=demo).distinct().order_by("name") if items else []
     result = {
-        "source": source, "currency": "PKR", "estimated_at": checked_at.isoformat(),
+        "source": source, "currency": "PKR", "estimated_at": checked_at.isoformat(), "budget": money(budget),
         "items": [{"slug": slug, "quantity": quantity,
                    "name": products[slug].canonical_name if slug in products else "Product unavailable in this catalog",
                    "size": products[slug].size_label if slug in products else "Size unavailable",
@@ -81,11 +81,20 @@ def estimate_basket(items, source, unresolved=()):
         covered = sum(line["status"] == "included" for line in lines)
         conflict = len(scopes) > 1
         complete = bool(items) and covered == len(items) and not conflict
+        assessment = {"status": "not_set", "remaining": None, "over_by": None}
+        if budget is not None:
+            if not complete:
+                assessment["status"] = "incomplete"
+            elif subtotal > budget:
+                assessment.update(status="over_budget", over_by=money(subtotal - budget))
+            else:
+                assessment.update(status="at_budget" if subtotal == budget else "within_budget", remaining=money(budget - subtotal))
         result["retailers"].append({
             "name": retailer.name, "slug": retailer.slug, "covered_count": covered,
             "item_count": len(items), "is_complete": complete,
             "subtotal": money(subtotal) if covered else None,
             "total": money(subtotal) if complete else None,
             "has_unverified_areas": unverified, "has_mixed_areas": conflict, "lines": lines,
+            "budget_assessment": assessment,
         })
     return result

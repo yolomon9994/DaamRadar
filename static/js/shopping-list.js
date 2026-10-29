@@ -2,11 +2,15 @@
 
 (() => {
   const key = "daamradar.shopping-list.v1";
+  const budgetKey = "daamradar.shopping-budget.v1";
   const transfer = window.DaamRadarListTransfer;
   const page = document.querySelector("[data-shopping-list]");
   const feedback = document.querySelector("[data-list-feedback]");
   let storageWarning = "";
   let state = {demo: [], live: []};
+  let budgets = {demo: null, live: null};
+  let budgetWarning = "";
+  let budgetDraft = false;
   let controller;
   let revision = 0;
   const names = new Map();
@@ -89,10 +93,12 @@
 
   // Keep separate tabs synchronized; the server never stores the shopping list.
   window.addEventListener("storage", (event) => {
-    if (event.key !== key && event.key !== null) return;
-    state = load();
-    updateCounts();
-    if (page) refresh(true);
+    if (event.key !== key && event.key !== budgetKey && event.key !== null) return;
+    if (event.key !== budgetKey) { state = load(); updateCounts(); }
+    if (page) {
+      if (event.key !== key) { budgets = loadBudgets(); renderBudget(); }
+      refresh(event.key !== budgetKey);
+    }
   });
   if (!page) return;
 
@@ -102,6 +108,9 @@
   const message = page.querySelector("[data-list-message]");
   const estimates = page.querySelector("[data-list-estimates]");
   const refreshButton = page.querySelector("[data-list-refresh]");
+  const budgetSection = page.querySelector("[data-list-budget]");
+  const budgetInput = page.querySelector("[data-budget-input]");
+  const budgetNote = page.querySelector("[data-budget-note]");
   let updateTransfer = () => {};
   const printSection = page.querySelector("[data-list-print]");
   const printSheet = page.querySelector("[data-print-sheet]");
@@ -118,6 +127,71 @@
     out_of_stock: "Out of stock — excluded", area_ambiguous: "Multiple delivery areas — choose an area before estimating",
   };
   const money = (value) => "Rs. " + Number(value).toLocaleString("en-PK", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  function normalizeBudget(value) {
+    if (typeof value !== "string" || !/^\d{1,10}(\.\d{1,2})?$/.test(value.trim())) return null;
+    const [whole, fraction = ""] = value.trim().split(".");
+    return whole.replace(/^0+(?=\d)/, "") + "." + fraction.padEnd(2, "0");
+  }
+  function loadBudgets() {
+    try {
+      budgetWarning = "";
+      const raw = localStorage.getItem(budgetKey);
+      if (raw === null) return {demo: null, live: null};
+      const saved = JSON.parse(raw);
+      if (!saved || Array.isArray(saved)) throw new Error("Invalid saved budgets");
+      for (const catalog of ["demo", "live"]) {
+        if (saved[catalog] !== null && normalizeBudget(saved[catalog]) === null) throw new Error("Invalid saved budget");
+      }
+      return {demo: saved.demo === null ? null : normalizeBudget(saved.demo), live: saved.live === null ? null : normalizeBudget(saved.live)};
+    } catch (_) {
+      budgetWarning = "Saved budgets could not be read. No budget has been applied; your shopping lists are kept.";
+      return {demo: null, live: null};
+    }
+  }
+  function saveBudgets() {
+    try { localStorage.setItem(budgetKey, JSON.stringify(budgets)); budgetWarning = ""; }
+    catch (_) { budgetWarning = "Browser storage is unavailable or full. Budget changes last only on this page."; }
+  }
+  function renderBudget() {
+    budgetDraft = false;
+    budgetInput.value = budgets[source] ?? "";
+    budgetInput.setCustomValidity("");
+    budgetInput.removeAttribute("aria-invalid");
+    page.querySelector("[data-budget-remove]").hidden = budgets[source] === null;
+    budgetNote.textContent = [budgetWarning, budgets[source] === null ? "No budget set for this list." : "Saved item-price budget: " + money(budgets[source]) + ". Full estimates are needed to assess it."].filter(Boolean).join(" ");
+  }
+  function budgetDescription(assessment) {
+    if (budgetDraft || !assessment || assessment.status === "not_set") return null;
+    if (assessment.status === "incomplete") return "Cannot assess full budget";
+    if (assessment.status === "over_budget") return money(assessment.over_by) + " over budget";
+    if (assessment.status === "at_budget") return "Exactly at budget · " + money(assessment.remaining) + " remaining";
+    return money(assessment.remaining) + " remaining in budget";
+  }
+  budgetSection.hidden = false;
+  budgetInput.addEventListener("input", () => {
+    budgetDraft = true;
+    const valid = normalizeBudget(budgetInput.value) !== null;
+    budgetInput.setCustomValidity(valid ? "" : "Enter a PKR budget from 0 to 9999999999.99 with at most two decimal places.");
+    budgetInput.setAttribute("aria-invalid", String(!valid));
+    estimates.querySelectorAll("[data-budget-assessment]").forEach((node) => node.remove());
+    budgetNote.textContent = [budgetWarning, "Save this budget to compare estimates. The last saved budget is unchanged."].filter(Boolean).join(" ");
+    renderPrintSheet();
+  });
+  page.querySelector("[data-budget-form]").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const amount = normalizeBudget(budgetInput.value);
+    if (amount === null) {
+      budgetInput.setCustomValidity("Enter a PKR budget from 0 to 9999999999.99 with at most two decimal places.");
+      budgetInput.reportValidity();
+      return;
+    }
+    budgets[source] = amount; saveBudgets(); renderBudget(); refresh(false);
+  });
+  page.querySelector("[data-budget-remove]").addEventListener("click", () => {
+    budgets[source] = null; saveBudgets(); renderBudget(); refresh(false); budgetInput.focus();
+  });
+  budgets = loadBudgets();
+  renderBudget();
   function element(tag, text, className) {
     const node = document.createElement(tag);
     if (text !== undefined) node.textContent = text;
@@ -200,6 +274,10 @@
         "Covered-items subtotal only: " + money(retailer.subtotal) : "No eligible prices to subtotal."));
       if (retailer.has_unverified_areas) summary.append(element("p", "Delivery areas unverified. Confirm these items can be ordered together."));
       if (retailer.has_mixed_areas) summary.append(element("p", "Delivery-area information conflicts; a full basket estimate is withheld."));
+      const budgetText = budgetDescription(retailer.budget_assessment);
+      if (budgetText) {
+        summary.append(element("p", "Item-price budget: " + money(printData.budget)), element("p", budgetText));
+      } else if (budgetDraft) summary.append(element("p", "Budget not assessed: save pending budget changes first."));
     } else {
       summary.append(element("p", "Items-only checklist: no retailer prices or basket total are shown."));
     }
@@ -317,6 +395,13 @@
       }
       if (retailer.has_unverified_areas) card.append(element("p", "Delivery areas unverified. Confirm these items can be ordered together.", "basket-warning"));
       if (retailer.has_mixed_areas) card.append(element("p", "Delivery-area information differs across items; a full basket estimate is withheld.", "basket-warning"));
+      const budgetText = budgetDescription(retailer.budget_assessment);
+      if (budgetText) {
+        const budgetResult = element("div", undefined, "budget-assessment");
+        budgetResult.dataset.budgetAssessment = retailer.budget_assessment.status;
+        budgetResult.append(element("strong", budgetText), element("p", "Item-price budget: " + money(data.budget) + ". Delivery and checkout charges are excluded."));
+        card.append(budgetResult);
+      }
       const details = element("details");
       details.append(element("summary", "Item breakdown"));
       const breakdown = element("ul", undefined, "basket-breakdown");
@@ -362,6 +447,7 @@
     estimates.setAttribute("aria-busy", "true");
     controller = new AbortController();
     const query = new URLSearchParams({source});
+    if (budgets[source] !== null) query.set("budget", budgets[source]);
     state[source].forEach((item) => {
       query.append("item", item.slug + ":" + item.quantity);
       if (item.unresolved) query.append("unresolved", item.slug);

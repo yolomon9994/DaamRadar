@@ -65,6 +65,8 @@ Select **Add to list** on product cards or detail pages, then open **Shopping li
 
 Demo and collected lists stay separate and are saved in the same browser without an account. JavaScript and browser storage enable persistence; the page warns if storage is unavailable. No live collection runs when using the list. See [shopping-list behavior, API and checks](docs/shopping-list.md).
 
+Under **Plan your shopping budget**, enter a PKR amount and select **Save budget**. Complete retailer estimates show the amount remaining, exact equality or an overage; incomplete or conflicting-area baskets show **Cannot assess full budget**. Demo and Collected budgets stay separate in this browser. Budget comparisons exclude delivery and checkout charges. See [budget rules](docs/shopping-list.md#set-a-shopping-budget).
+
 To take a checklist to the store, open **Take your list with you**, select a retailer (or items only), and choose **Print / Save as PDF**. The print view includes pack sizes, quantities, purchase checkboxes, dated observations and any exclusion/area warnings. Choose **Save as PDF** in the browser's print dialog to keep a copy on your phone. See [printing instructions](docs/shopping-list.md#print-a-checklist-or-save-a-pdf).
 
 To back up or move an editable list, use **Back up or transfer your list → Download list JSON**. On another local installation, choose **Preview a list file**, review local matches, then **Merge** quantities or **Replace** that catalog's list. Files contain product identities and quantities; prices come from the receiving database. Uncertain matches remain visible and unpriced. See [transfer rules and file format](docs/shopping-list.md#back-up-or-transfer-an-editable-list).
@@ -77,6 +79,7 @@ To follow a regular purchase, select **Watch price** on its card or detail page,
 
 - Responsive homepage, category navigation, search, comparison cards, detail tables, source transparency, and empty/error states.
 - Browser-saved shopping lists with pack quantities, separate demo/collected lists and read-only retailer basket estimates. Per-item exclusions and coverage keep incomplete subtotals separate from full estimates; no cheapest-basket claim is made. See [shopping lists](docs/shopping-list.md).
+- Separate saved Demo/Collected shopping budgets, exact Decimal remaining/over-budget amounts for complete baskets, and retailer print/PDF budget summaries. Incomplete baskets cannot claim to fit a budget.
 - Standard-unit price labels (Rs/L, Rs/kg and Rs/item) on cards, detail listings, basket breakdowns and retailer print checklists. Decimal calculations include multipacks and preserve the original eligibility/area rules. See [unit pricing](docs/unit-pricing.md).
 - Browser-saved target-price watchlists with per-pack thresholds, explicit fresh/in-stock matches, observation timestamps, delivery caveats and separate Demo/Collected targets. Local checks expire old results and never trigger retailer collection. See [watchlists](docs/watchlist.md).
 - Retailer-selectable shopping checklists for browser printing/Save as PDF, with pack sizes, purchase checkboxes, check dates and exclusions. Items-only mode omits prices; printed totals retain the same basket safeguards.

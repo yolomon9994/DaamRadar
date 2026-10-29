@@ -15,6 +15,17 @@
   <div class="data-notice"><span class="notice-symbol" aria-hidden="true">i</span><p>{% if source == 'demo' %}<strong>Fictional demo basket.</strong> Sample prices demonstrate the feature; they are not current retailer quotes.{% else %}<strong>Observed item-price estimates.</strong> Delivery fees and checkout charges are excluded. Delivery-area availability and final costs must be confirmed with each retailer.{% endif %} Missing, stale and unavailable items are excluded. Retailers are listed alphabetically; no cheapest-retailer or savings claim is made.</p></div>
   <noscript><p class="data-notice">Enable JavaScript to save a shopping list in this browser and calculate basket estimates. You can still <a href="{% url 'home' %}?source={{ source }}#explore">browse products</a> without it.</p></noscript>
   <p data-list-message role="status" aria-live="polite"></p>
+  <section class="shopping-budget" data-list-budget hidden aria-labelledby="shopping-budget-title">
+    <h2 id="shopping-budget-title">Plan your shopping budget</h2>
+    <p>Set a budget for this {% if source == 'demo' %}demo{% else %}collected{% endif %} list and compare complete item-price estimates. Delivery and checkout charges are excluded.</p>
+    <form class="budget-form" data-budget-form>
+      <label for="shopping-budget">Budget (PKR)<input id="shopping-budget" type="text" inputmode="decimal" maxlength="13" required placeholder="e.g. 3000.00" data-budget-input aria-describedby="budget-help"></label>
+      <button type="submit" class="button-small">Save budget</button>
+      <button type="button" class="list-action" data-budget-remove hidden>Remove budget</button>
+    </form>
+    <p id="budget-help" class="muted">Use 0–9,999,999,999.99 with up to two decimal places. Demo and Collected budgets stay separate in this browser.</p>
+    <p data-budget-note role="status" aria-live="polite"></p>
+  </section>
   <section class="list-transfer" data-list-transfer hidden aria-labelledby="list-transfer-title">
     <h2 id="list-transfer-title">Back up or transfer your list</h2>
     <p>Download an editable JSON list with product names, pack sizes and quantities. Importing previews local matches before you change anything. Prices and purchase marks are never restored from a file.</p>

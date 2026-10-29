@@ -10,6 +10,27 @@ Lists are saved in this browser's local storage under `daamradar.shopping-list.v
 
 JavaScript is required for shopping-list controls. Product browsing and individual comparisons remain available without it. Page views and basket calculations never trigger retailer collection.
 
+## Set a shopping budget
+
+Open **Shopping list → Plan your shopping budget**, enter a PKR amount and select **Save budget**. Demo and Collected lists have independent budgets. A budget can be set before adding any products. Use **Remove budget** to stop comparing against it; your products, quantities, the other catalog's budget and watch targets are preserved.
+
+Budgets accept **0–9,999,999,999.99 PKR** with at most two decimal places. Zero is an explicit spending limit; a blank field is not a saved budget. Input such as `3000` is normalized to `3000.00`. Set an amount, save it, and review each retailer's existing item-price estimate:
+
+| Full item-price estimate | Saved budget | Assessment |
+| ---: | ---: | --- |
+| Rs. 2,850 | Rs. 3,000 | Rs. 150 remaining in budget |
+| Rs. 3,000 | Rs. 3,000 | Exactly at budget; Rs. 0 remaining |
+| Rs. 3,200 | Rs. 3,000 | Rs. 200 over budget |
+| Incomplete or conflicting delivery areas | Rs. 3,000 | Cannot assess full budget |
+
+These are examples, not current retailer quotes. Calculations use Python `Decimal` and the full original-pack total; no rounded unit rate or partial subtotal participates. A budget comparison requires the same complete-coverage and delivery-scope checks as the full basket estimate. Single unverified observations can still contribute to a clearly labeled observed item-price estimate with its delivery warning. Matching a budget is not a delivered-cost guarantee: **delivery and checkout charges remain excluded**. No cheapest retailer or budget winner is selected.
+
+Saving/removing a budget reloads estimates. Editing an amount hides previous comparisons until it is saved, including in print output; valid pack totals can remain visible while a budget draft is being edited. Invalid quantities, pending or failed estimate requests cannot retain an old budget result. An empty list makes no budget-fit or free-basket claim. A slower old request cannot replace a newer budget assessment.
+
+The retailer print/PDF checklist includes the saved budget and that retailer's assessment alongside the original date, coverage and area caveats. Items-only printing omits budget amounts and comparisons. Clearing a list retains its budget for future planning; removing the budget is a separate action. JSON list exports retain their existing identity/quantity format and do not include budgets. Importing/merging/replacing a list uses the receiving catalog's existing budget when estimates reload.
+
+Budgets use a separate browser key, `daamradar.shopping-budget.v1`, with `{ "demo": "3000.00", "live": null }` as an example. Amounts are normalized decimal strings; `null` means unset. Existing shopping-list storage remains compatible. Budgets persist at the same origin/profile, receive changes from other tabs, and are lost when that browser storage is cleared. Blocked/full storage permits page-only use with a warning. Corrupt budgets leave shopping lists intact and show no assessment until a valid budget is saved. No account, dependency or database migration is added; the server never saves budgets or performs retailer requests to assess them.
+
 ## Back up or transfer an editable list
 
 1. Open **Shopping list**, choose **Demo list** or **Collected list**, and let its estimates load so product identities can be cached.
@@ -80,6 +101,14 @@ Estimates are reloaded on opening the list, changing quantities, removing items,
 GET /api/basket/?source=demo&item=demo-olpers-milk-1l:2&item=demo-nutella-350g:1
 ```
 
+Add optional `budget=3000.00` for a budget assessment. Its range is 0–9,999,999,999.99 with at most two decimal places; use plain decimals without leading zeroes (except `0.xx`). An absent budget is unset; empty, negative, nonfinite, scientific-notation, oversized or over-precision values return HTTP 400. The response includes a normalized top-level `budget` string, or `null` when omitted, and each retailer has `budget_assessment`:
+
+```json
+{"status": "within_budget", "remaining": "900.00", "over_by": null}
+```
+
+Statuses are `not_set`, `incomplete`, `within_budget`, `at_budget` or `over_budget`. `remaining` is provided only for complete baskets within/at budget; equality returns `"0.00"`. `over_by` is provided only for complete over-budget baskets. Both amounts are `null` when the budget is unset or full coverage/scope is incomplete. Without selected products, no retailer rows or budget assessment is returned. Budget parameters are used only for the current read-only calculation, without persistence.
+
 `source` is `demo` (default) or `live`. Repeat `item=product-slug:quantity` for each product. Duplicate slugs, malformed values, quantities outside 1–99, more than 50 entries and unknown sources return HTTP 400. An empty list returns empty items/retailers. Wrong-source or deleted slugs are unavailable items, not substitutes. The response includes the selected items (including `size`) and retailer estimates with `covered_count`, `item_count`, `subtotal`, nullable `total`, `is_complete`, area flags and per-item exclusion statuses. Lines include `last_checked` for the included offer and `last_observed_at` for the most recent candidate observation, even when excluded. These dates can differ when newer observations are ineligible. Responses use `Cache-Control: no-store`; the normal anonymous API throttle applies. POST is not supported. This endpoint calculates estimates without persisting the list or changing price history.
 
 Available items also include a price-free `product` identity descriptor for transfers. Repeated `unresolved=<selected-slug>` parameters force designated imported entries to stay unavailable; every unresolved reference must be in the requested list, otherwise HTTP 400 is returned.
@@ -106,3 +135,9 @@ The list-transfer milestone passed all 229 automated tests on SQLite and Postgre
 Twenty-four Chrome transfer checks passed against disposable demo/QA data: actual JSON download, cross-installation slug changes, preview/cancel, merge/replace, local price reloads, reload persistence, safely displayed unavailable items, repeated unresolved merges, catalog isolation, malformed/price-bearing/oversized files, quantity/product limits, invalid current quantities and blocked storage. Transfer controls were checked at 1280px and 390px. The existing 18 shopping-list checks and 21 print/PDF checks also passed. Browser helpers verified that the development database and `.env` were unchanged.
 
 Production smoke validation served the new hashed transfer JavaScript through WhiteNoise on SQLite and PostgreSQL. The SQLite HTTP smoke check also exercised the anonymous read-only preview endpoint through Waitress. PostgreSQL validation checked fresh migrations, migration drift, static collection and a disposable dump/restore, then stopped the temporary server.
+
+The budget milestone passed all 263 offline automated tests on SQLite under Windows/Python 3.13, including 10 new tests for Decimal remaining/overage/equality, zero/unset budgets, partial coverage, stock/freshness exclusions, unresolved products, delivery-scope conflicts, source separation, API bounds and read-only behavior. The migration-drift check found no changes.
+
+Twenty-eight Chrome budget checks passed, covering empty lists, saved and independent catalog budgets, exact equality, overages, zero limits, invalid drafts, printing, a real budget PDF, items-only output, navigation persistence, cross-tab updates, delayed older responses, quantity edits, failures, corrupt/blocked storage, retained budgets on list clearing/import and unchanged JSON transfers. Layouts were checked at 1280px and 390px. The existing 21 print/PDF and 24 list-transfer browser checks also passed, for 73 Chrome checks in this milestone. Disposable servers verified the development database and `.env` were unchanged; generated screenshots/PDFs remain ignored artifacts.
+
+SQLite production smoke validation passed through Waitress and WhiteNoise, including exact remaining budget for a complete basket and withheld budget assessments for missing products, alongside existing routes/assets and server shutdown. Budget behavior requires no new dependency or migration.

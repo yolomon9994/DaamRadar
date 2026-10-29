@@ -48,6 +48,16 @@
 .basket-breakdown {list-style:none; padding:0;}
 .basket-breakdown li {padding:14px 0; border-bottom:1px solid var(--border); overflow-wrap:anywhere;}
 .basket-breakdown span,.basket-breakdown time {display:block; font-size:13px;}
+.shopping-budget {padding:24px; margin:24px 0; border:1px solid var(--border); border-radius:12px; background:var(--cream);}
+.shopping-budget h2 {font-size:25px;}
+.budget-form {display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; margin:18px 0;}
+.budget-form label {display:flex; flex-direction:column; gap:7px; max-width:100%; font-size:13px; font-weight:600;}
+.budget-form input {width:240px; max-width:100%; padding:9px; border:1px solid var(--border); border-radius:6px; background:white;}
+.budget-form input[aria-invalid="true"] {border-color:#a43b24;}
+.budget-assessment {margin:18px 0; border-left:3px solid var(--green); padding:10px 12px; background:white; overflow-wrap:anywhere;}
+.budget-assessment p {margin:6px 0 0; font-size:12px;}
+.budget-assessment[data-budget-assessment="over_budget"] {border-color:#a43b24;}
+.budget-assessment[data-budget-assessment="incomplete"] {border-color:var(--muted);}
 .basket-card summary {cursor:pointer; font-weight:600; padding:8px 0;}
 .shopping-feedback {position:fixed; bottom:16px; left:50%; transform:translateX(-50%); width:max-content; max-width:calc(100% - 32px); background:var(--green); color:white; padding:13px 20px; border-radius:10px; z-index:100; box-shadow:0 5px 20px #0002;}
 .shopping-feedback a {color:white; text-decoration:underline;}

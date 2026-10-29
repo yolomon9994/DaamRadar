@@ -30,9 +30,11 @@ class BasketEstimate(APIView):
     def get(self, request):
         query = BasketQuerySerializer(data={"source": request.query_params.get("source", "demo"),
                                            "items": request.query_params.getlist("item"),
-                                           "unresolved": request.query_params.getlist("unresolved")})
+                                           "unresolved": request.query_params.getlist("unresolved"),
+                                           **({"budget": request.query_params["budget"]} if "budget" in request.query_params else {})})
         query.is_valid(raise_exception=True)
-        return Response(estimate_basket(query.validated_data["items"], query.validated_data["source"], query.validated_data["unresolved"]))
+        return Response(estimate_basket(query.validated_data["items"], query.validated_data["source"],
+                                        query.validated_data["unresolved"], query.validated_data["budget"]))
 
 
 @method_decorator(never_cache, name="dispatch")

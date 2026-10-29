@@ -7,6 +7,7 @@ from catalog.models import Category, PriceHistory, Product, Retailer, RetailerLi
 
 class BasketQuerySerializer(serializers.Serializer):
     source = serializers.ChoiceField(choices=["demo", "live"], default="demo")
+    budget = serializers.RegexField(r"\A(?:0|[1-9][0-9]{0,9})(?:\.[0-9]{1,2})?\Z", required=False, default=None, trim_whitespace=False)
     items = serializers.ListField(child=serializers.CharField(trim_whitespace=False), max_length=50, default=list)
     unresolved = serializers.ListField(child=serializers.RegexField(r"\A[-a-zA-Z0-9_]{1,280}\Z"), max_length=50, default=list)
 
@@ -14,6 +15,9 @@ class BasketQuerySerializer(serializers.Serializer):
         if not set(data["unresolved"]).issubset({slug for slug, _ in data["items"]}):
             raise serializers.ValidationError("Unresolved items must belong to this list.")
         return data
+
+    def validate_budget(self, value):
+        return Decimal(value) if value is not None else None
 
     def validate_items(self, values):
         result, seen = [], set()
