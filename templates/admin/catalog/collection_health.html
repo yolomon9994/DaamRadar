@@ -7,7 +7,7 @@
   <section aria-labelledby="manual-refresh-heading"><h2 id="manual-refresh-heading">Manual price refresh</h2>
   {% if active_refresh %}<p>A collection request is queued or running. <a href="{% url 'admin:catalog_refresh_detail' active_refresh.pk %}">Open {{ active_refresh.get_kind_display|lower }} #{{ active_refresh.pk }}</a>. Another import or refresh cannot start until it is finalized.</p>
   {% elif can_start_refresh %}<form method="post" action="{% url 'admin:catalog_refresh_start' %}">{% csrf_token %}{{ refresh_form.as_p }}<button type="submit" class="button">Start manual refresh</button></form>
-  <p>Checks stale existing reviewed URLs only, up to ten per source. Collection switches and contact configuration must already be enabled. No URLs are discovered or source settings changed.</p>
+  <p>Checks the oldest stale existing reviewed URLs, up to ten per source per request. If more remain due, start another manual refresh after inspecting the result. Collection switches and contact configuration must already be enabled.</p>
   {% else %}<p>Starting a refresh requires the “Can manually refresh reviewed prices” permission in addition to dashboard access.</p>{% endif %}
   <details><summary>Recent admin collection requests (all sources)</summary><ul>{% for job in recent_refreshes %}<li><a href="{% url 'admin:catalog_refresh_detail' job.pk %}">{{ job.get_kind_display }} #{{ job.pk }} — {{ job.get_status_display }}</a> · {{ job.created_at|date:'d M Y, H:i:s' }} PKT</li>{% empty %}<li>No admin collection requests yet.</li>{% endfor %}</ul></details>
   </section>

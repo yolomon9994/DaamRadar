@@ -25,3 +25,32 @@ The eight milk expansion extracts reported in-stock availability. Six pantry ext
 All pantry extracts reported in-stock availability. Source titles are preserved, including case/whitespace, with factual surrounding markup reconstructed as above. Cartpk fixtures retain agreeing visible/final/metadata prices, explicit PKR and canonical URL. No search/category price was substituted for the product page.
 
 Every source-derived file is a **minimal factual extract**, not a complete saved page. Descriptions, images, executable scripts, analytics, browser/session metadata, and unrelated site configuration are omitted. These snapshots test observed formats and are not current-price claims or retailer-provided licensed feeds. Tests never fetch the source websites. See the [milk catalog](../../../docs/milk-catalog.md) and [pantry catalog](../../../docs/pantry-catalog.md) for scope and known limits.
+
+## 29 October 2026 expansion
+
+Twenty-three minimal factual extracts were inspected with the same named, robots-aware client. Surrounding markup is reconstructed. Jalal Sons extracts preserve heading/name, structured brand and explicit PKR offer/stock. Cartpk extracts preserve canonical URL, heading, final-price amount/text, agreeing price/currency metadata and stock. No descriptions, images, executable code or session data are included. `jalal` and `cartpk` name the fixture source; absent source columns have no fixture and are not enabled counterparts. All reported in-stock availability at review. These are dated parser evidence, never seed data.
+
+| Fixture key (`<source>_expanded_<key>.html`) | Jalal Sons page / PKR | Cartpk page / PKR |
+| --- | --- | --- |
+| `dalda_ghee_5000` | [https://www.jalalsons.com.pk/product/dalda-ghee-5kg-2809046](https://www.jalalsons.com.pk/product/dalda-ghee-5kg-2809046) / 3044.00 | — |
+| `dalda_ghee_2500` | [https://www.jalalsons.com.pk/product/dalda-ghee-25kg-2809045](https://www.jalalsons.com.pk/product/dalda-ghee-25kg-2809045) / 1574.00 | — |
+| `tapal_bags_100` | [https://www.jalalsons.com.pk/product/tapal-danedar-tea-bags-100-pieces-3007873](https://www.jalalsons.com.pk/product/tapal-danedar-tea-bags-100-pieces-3007873) / 899.00 | — |
+| `lipton_430` | [https://www.jalalsons.com.pk/product/lipton-tea-430gm-2810108](https://www.jalalsons.com.pk/product/lipton-tea-430gm-2810108) / 1008.00 | — |
+| `surf_1000` | — | [https://www.cartpk.com/surf-excel-detergent-powder-1kg](https://www.cartpk.com/surf-excel-detergent-powder-1kg) / 640.00 |
+| `yogurt_plain_200` | [https://www.jalalsons.com.pk/product/nestle-yogurt-plain-200gm-2808831](https://www.jalalsons.com.pk/product/nestle-yogurt-plain-200gm-2808831) / 164.00 | — |
+| `yogurt_strawberry_100` | [https://www.jalalsons.com.pk/product/nestle-fruit-yogurt-strawberry-100gm-2808827](https://www.jalalsons.com.pk/product/nestle-fruit-yogurt-strawberry-100gm-2808827) / 110.00 | — |
+| `milkpak_cream_200` | [https://www.jalalsons.com.pk/product/nestle-milkpak-cream-200ml-2809410](https://www.jalalsons.com.pk/product/nestle-milkpak-cream-200ml-2809410) / 228.00 | [https://www.cartpk.com/nestle-milk-pack-cream-200-ml](https://www.cartpk.com/nestle-milk-pack-cream-200-ml) / 250.00 |
+| `milkpak_butter_200` | [https://www.jalalsons.com.pk/product/nestle-milk-pak-dairy-butter-200g-3007553](https://www.jalalsons.com.pk/product/nestle-milk-pak-dairy-butter-200g-3007553) / 658.00 | — |
+| `nesfruta_mango_1000` | [https://www.jalalsons.com.pk/product/nestle-nesfruta-mango-1l-2809139](https://www.jalalsons.com.pk/product/nestle-nesfruta-mango-1l-2809139) / 249.00 | — |
+| `milo_180` | [https://www.jalalsons.com.pk/product/nestle-milo-drink-180ml-2809136](https://www.jalalsons.com.pk/product/nestle-milo-drink-180ml-2809136) / 94.00 | — |
+| `milo_tin_235` | [https://www.jalalsons.com.pk/product/nestle-milo-drink-tin-235ml-2809137](https://www.jalalsons.com.pk/product/nestle-milo-drink-tin-235ml-2809137) / 594.00 | — |
+| `national_chat_100` | [https://www.jalalsons.com.pk/product/national-chat-masala-100g-2808927](https://www.jalalsons.com.pk/product/national-chat-masala-100g-2808927) / 188.00 | — |
+| `national_biryani_45` | [https://www.jalalsons.com.pk/product/national-biryani-masala-45g-2808924](https://www.jalalsons.com.pk/product/national-biryani-masala-45g-2808924) / 158.00 | — |
+| `national_ginger_50` | [https://www.jalalsons.com.pk/product/national-ginger-powder-50g-3012051](https://www.jalalsons.com.pk/product/national-ginger-powder-50g-3012051) / 244.00 | — |
+| `national_salt_800` | [https://www.jalalsons.com.pk/product/national-iodized-salt-800gm-2808929](https://www.jalalsons.com.pk/product/national-iodized-salt-800gm-2808929) / 60.00 | — |
+| `national_chilli_100` | [https://www.jalalsons.com.pk/product/national-red-chilli-powder-100gm-2808930](https://www.jalalsons.com.pk/product/national-red-chilli-powder-100gm-2808930) / 198.00 | — |
+| `evian_500` | [https://www.jalalsons.com.pk/product/evian-water-500ml-2810170](https://www.jalalsons.com.pk/product/evian-water-500ml-2810170) / 594.00 | — |
+| `malee_coconut_330` | [https://www.jalalsons.com.pk/product/malee-coconut-water-330ml-2809163](https://www.jalalsons.com.pk/product/malee-coconut-water-330ml-2809163) / 548.00 | — |
+| `everyday_15` | [https://www.jalalsons.com.pk/product/nestle-everyday-15g-2809418](https://www.jalalsons.com.pk/product/nestle-everyday-15g-2809418) / 30.00 | — |
+| `shan_korma_50` | — | [https://www.cartpk.com/shan-korma-masala-50g](https://www.cartpk.com/shan-korma-masala-50g) / 350.00 |
+| `national_chat_50` | — | [https://www.cartpk.com/national-chat-masala-50g](https://www.cartpk.com/national-chat-masala-50g) / 170.00 |

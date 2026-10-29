@@ -222,7 +222,7 @@ class RefreshPricesTests(TestCase):
             self.assertEqual((source.status, source.collection_enabled), (status, enabled))
         self.assertNotIn("cartpk", self.clients)
 
-    def test_ten_url_limit_is_preserved_and_other_retailer_can_continue(self):
+    def test_large_refresh_selects_oldest_ten_and_leaves_remaining_for_manual_followup(self):
         listing = self.listings["jalal-sons"]
         RetailerListing.objects.bulk_create([
             RetailerListing(product=listing.product, retailer=listing.retailer, external_id=f"extra-{index}",
@@ -230,14 +230,15 @@ class RefreshPricesTests(TestCase):
                 url=f"https://www.jalalsons.com.pk/product/example-{index}")
             for index in range(10)
         ])
-        command = Command(stdout=StringIO(), stderr=StringIO())
-        with patch("catalog.management.commands.scrape.PoliteClient", side_effect=self.client_factory), self.assertRaises(CommandError):
-            call_command(command)
-        self.assertEqual(command.results[0]["outcome"], "error")
-        self.assertIsNone(command.results[0]["run_id"])
-        self.assertIn("At most 10", command.results[0]["error"])
+        with patch("catalog.management.commands.scrape.PoliteClient", side_effect=self.client_factory):
+            command, output, _ = self.invoke()
+        self.assertEqual(command.results[0]["outcome"], "success")
+        run = ScrapeRun.objects.get(pk=command.results[0]["run_id"])
+        self.assertEqual(len(run.results), 10)
+        self.assertIn("oldest 10 of 11", output)
+        self.assertNotIn("https://www.jalalsons.com.pk/product/example-9", [row["url"] for row in run.results])
         self.assertEqual(command.results[1]["outcome"], "success")
-        self.assertEqual(set(self.clients), {"cartpk"})
+        self.assertEqual(set(self.clients), {"jalal-sons", "cartpk"})
 
     def test_interrupt_saves_audit_and_report_and_stops_before_second_source(self):
         def factory(origin):

@@ -101,8 +101,8 @@ class PantryParserTests(SimpleTestCase):
 
     def test_new_registry_keeps_original_milk_pairs_and_unreviewed_urls_excluded(self):
         self.assertEqual(len(MILK_COMPARISON_PRODUCTS), 5)
-        self.assertEqual(len(REVIEWED_PRODUCTS), 8)
-        self.assertEqual(len(CartpkAdapter.reviewed_titles), 8)
+        self.assertTrue(all(item in REVIEWED_PRODUCTS for item in PANTRY_COMPARISON_PRODUCTS))
+        self.assertTrue(all(item["cartpk_path"] in CartpkAdapter.reviewed_titles for item in PANTRY_COMPARISON_PRODUCTS))
 
 
 @override_settings(SCRAPING_ENABLED=True)

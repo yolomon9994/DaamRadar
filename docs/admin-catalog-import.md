@@ -13,6 +13,8 @@ Open **Collection health**, then **Import reviewed catalog — preview batches**
 
 Preview is read-only: it does not fetch retailer pages, seed sources, create products/jobs, change switches or refresh observations. It works with a demo-only database and shows setup errors when collection is not configured. Retailer records must exist, their validated status/collection switches and adapters must allow collection, and `SCRAPING_ENABLED`/`SCRAPER_CONTACT` must be configured explicitly. See the [collection runbook](collection-workflow.md). These requirements are not enabled automatically.
 
+The [29 October expansion](expanded-catalog.md) adds six source/category batches for dairy, pantry, drinks and household products. The same preview, permissions and missing-only behavior apply; single-source entries do not imply matching retailer coverage.
+
 When setup is ready, choose **Import N missing listings** to start a finite local worker. The existing progress page shows the import batch, source audit link, completed URL counts, stored observations and errors. It polls stored state, with a manual refresh fallback; closing the page does not cancel or duplicate collection. Imports use the same file-based SQLite/PostgreSQL requirement, worker setup and [confirmed-stop recovery procedure](admin-refresh.md#recover-an-interrupted-worker) as manual price refresh.
 
 ## Permissions and preview scope

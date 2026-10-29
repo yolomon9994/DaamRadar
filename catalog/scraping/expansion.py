@@ -1,0 +1,53 @@
+"""Exact products inspected on 29 October 2026; absent paths mean no reviewed counterpart.
+
+Titles and sizes must remain independently identifiable. Similar products, promotional
+bundles and different pack sizes are deliberately not substituted for missing sources.
+"""
+
+EXPANSION_REVIEW_DATE = "2026-10-29"
+EXPANSION_PRODUCTS = (
+    {"key": "dalda_ghee_5000", "title": "Dalda Ghee 5Kg", "category": "pantry", "illustration": "oil",
+     "jalal_path": "/product/dalda-ghee-5kg-2809046"},
+    {"key": "dalda_ghee_2500", "title": "Dalda Ghee 2.5Kg", "category": "pantry", "illustration": "oil",
+     "jalal_path": "/product/dalda-ghee-25kg-2809045"},
+    {"key": "tapal_bags_100", "title": "Tapal Danedar Tea Bags 100 Pieces", "category": "drinks", "illustration": "tea",
+     "jalal_path": "/product/tapal-danedar-tea-bags-100-pieces-3007873"},
+    {"key": "lipton_430", "title": "Lipton Tea 430Gm", "category": "drinks", "illustration": "tea",
+     "jalal_path": "/product/lipton-tea-430gm-2810108"},
+    {"key": "surf_1000", "title": "Surf Excel Detergent Powder 1kg", "category": "household", "illustration": "cleaning",
+     "cartpk_path": "/surf-excel-detergent-powder-1kg"},
+    {"key": "yogurt_plain_200", "title": "Nestle Yogurt Plain 200Gm", "category": "dairy", "illustration": "jar",
+     "jalal_path": "/product/nestle-yogurt-plain-200gm-2808831"},
+    {"key": "yogurt_strawberry_100", "title": "Nestle Fruit Yogurt Strawberry 100Gm", "category": "dairy", "illustration": "jar",
+     "jalal_path": "/product/nestle-fruit-yogurt-strawberry-100gm-2808827"},
+    {"key": "milkpak_cream_200", "title": "Nestle Milkpak Cream 200Ml", "category": "dairy", "illustration": "milk",
+     "jalal_path": "/product/nestle-milkpak-cream-200ml-2809410", "cartpk_path": "/nestle-milk-pack-cream-200-ml"},
+    {"key": "milkpak_butter_200", "title": "Nestle Milk Pak Dairy Butter 200g", "category": "dairy", "illustration": "basket",
+     "jalal_path": "/product/nestle-milk-pak-dairy-butter-200g-3007553"},
+    {"key": "nesfruta_mango_1000", "title": "Nestle Nesfruta Mango 1L", "category": "drinks", "illustration": "water",
+     "jalal_path": "/product/nestle-nesfruta-mango-1l-2809139"},
+    {"key": "milo_180", "title": "Nestle Milo Drink 180ML", "category": "drinks", "illustration": "milk",
+     "jalal_path": "/product/nestle-milo-drink-180ml-2809136"},
+    {"key": "milo_tin_235", "title": "Nestle Milo Drink Tin 235ML", "category": "drinks", "illustration": "water",
+     "jalal_path": "/product/nestle-milo-drink-tin-235ml-2809137"},
+    {"key": "national_chat_100", "title": "National Chat Masala 100G", "category": "pantry", "illustration": "spice",
+     "jalal_path": "/product/national-chat-masala-100g-2808927"},
+    {"key": "national_biryani_45", "title": "National Biryani Masala 45G", "category": "pantry", "illustration": "spice",
+     "jalal_path": "/product/national-biryani-masala-45g-2808924"},
+    {"key": "national_ginger_50", "title": "National Ginger Powder 50g", "category": "pantry", "illustration": "spice",
+     "jalal_path": "/product/national-ginger-powder-50g-3012051"},
+    {"key": "national_salt_800", "title": "National Iodized Salt 800Gm", "category": "pantry", "illustration": "spice",
+     "jalal_path": "/product/national-iodized-salt-800gm-2808929"},
+    {"key": "national_chilli_100", "title": "National Red Chilli Powder 100Gm", "category": "pantry", "illustration": "spice",
+     "jalal_path": "/product/national-red-chilli-powder-100gm-2808930"},
+    {"key": "evian_500", "title": "Evian Water 500Ml", "category": "drinks", "illustration": "water",
+     "jalal_path": "/product/evian-water-500ml-2810170"},
+    {"key": "malee_coconut_330", "title": "Malee Coconut Water 330ML", "category": "drinks", "illustration": "water",
+     "jalal_path": "/product/malee-coconut-water-330ml-2809163"},
+    {"key": "everyday_15", "title": "Nestle Everyday 15G", "category": "dairy", "illustration": "milk",
+     "jalal_path": "/product/nestle-everyday-15g-2809418"},
+    {"key": "shan_korma_50", "title": "Shan Korma Masala 50g", "category": "pantry", "illustration": "spice",
+     "cartpk_path": "/shan-korma-masala-50g"},
+    {"key": "national_chat_50", "title": "National Chat Masala 50g", "category": "pantry", "illustration": "spice",
+     "cartpk_path": "/national-chat-masala-50g"},
+)

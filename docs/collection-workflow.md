@@ -2,7 +2,7 @@
 
 Initial batch collection is also available through [reviewed catalog import in admin](admin-catalog-import.md), with a read-only missing-listing preview and create-only imports. The terminal commands below remain available. Refreshing existing observations is a separate action in the [admin refresh flow](admin-refresh.md).
 
-This workflow searches no external sites on behalf of visitors and activates no scheduler. Jalal Sons and Cartpk are enabled locally; Cartpk is restricted to eight reviewed product URLs. The [pantry expansion](pantry-catalog.md) adds three non-dairy pairs alongside the original milk pairs. Use PowerShell from the project directory. The [five-product catalog](milk-catalog.md) documents exact pairs, dated prices and expanded batches.
+This workflow searches no external sites on behalf of visitors and activates no scheduler. Jalal Sons and Cartpk are enabled locally; Cartpk is restricted to twelve reviewed product URLs. The [29 October expansion](expanded-catalog.md) adds 22 products across four categories, alongside the earlier [pantry](pantry-catalog.md) and [milk](milk-catalog.md) batches. Use PowerShell from the project directory.
 
 ## Refresh both reviewed sources
 
@@ -35,7 +35,7 @@ The tracked batch in `catalog/scraping/batches.py` contains the three previously
 .\.venv\Scripts\python.exe manage.py scrape jalal-sons --batch jalal-sons-basics --report-dir reports
 ```
 
-Global `SCRAPING_ENABLED`, the source's `collection_enabled` flag, and its `enabled` status must permit collection. The workspace has these configured for Jalal Sons and Cartpk. New checkouts default to disabled; see the README for setup. A run accepts at most ten distinct URLs, all validated before any request. Cartpk allows only the eight exact paths in `catalog/scraping/reviewed.py`, each tied to its expected identity.
+Global `SCRAPING_ENABLED`, the source's `collection_enabled` flag, and its `enabled` status must permit collection. The workspace has these configured for Jalal Sons and Cartpk. New checkouts default to disabled; see the README for setup. A run accepts at most ten distinct URLs, all validated before any request. Cartpk allows only the twelve exact paths in the reviewed registry, each tied to its expected identity.
 
 For the first Cartpk import on a fresh configured checkout:
 
@@ -66,6 +66,8 @@ For first-time non-dairy imports, use `--batch jalal-sons-pantry-comparison` or 
 ```
 
 This selects existing non-demo URLs whose observations are older than `PRICE_STALE_HOURS` (48 by default), oldest first. Omit `--stale-only` to deliberately recheck all existing non-demo URLs. If nothing needs checking, the command performs no HTTP requests, creates no run, and adds no history. A successful recheck updates the existing listing and appends one historical observation, even if the price has not changed. An unsuccessful check never refreshes its timestamp or overwrites its previous price.
+
+For more than ten distinct existing URLs, each refresh selects the oldest ten and prints a notice. Review the result, then explicitly invoke another stale refresh for the remaining due URLs. The admin action uses the same bound. No extra runs are started automatically; explicit URL/import batches still reject more than ten targets. See the [expanded catalog](expanded-catalog.md#refreshing-the-larger-catalog).
 
 Alternatively, pass one or more explicit `--url 'https://...'` arguments. Choose exactly one targeting mode: `--url`, `--batch`, or `--refresh-existing`.
 

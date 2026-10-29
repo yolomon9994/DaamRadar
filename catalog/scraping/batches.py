@@ -1,5 +1,6 @@
 """Small reviewed URL sets for repeatable manual collection, never discovery crawls."""
 from .reviewed import MILK_COMPARISON_PRODUCTS, MILK_REVIEW_DATE, PANTRY_COMPARISON_PRODUCTS, PANTRY_REVIEW_DATE
+from .expansion import EXPANSION_PRODUCTS, EXPANSION_REVIEW_DATE
 
 BATCHES = {
     "jalal-sons-pantry-comparison": {
@@ -37,6 +38,18 @@ BATCHES = {
         ],
     },
 }
+
+# Each source/category group is an explicit, independently selected manual run.
+# Empty groups are omitted; the collector's ten-URL cap is unchanged.
+for source, origin, path_key in (("jalal-sons", "https://www.jalalsons.com.pk", "jalal_path"),
+                                 ("cartpk", "https://www.cartpk.com", "cartpk_path")):
+    for category in ("dairy", "pantry", "drinks", "household"):
+        urls = [origin + item[path_key] for item in EXPANSION_PRODUCTS
+                if item["category"] == category and path_key in item]
+        if urls:
+            BATCHES[f"{source}-expanded-{category}"] = {
+                "retailer": source, "reviewed_at": EXPANSION_REVIEW_DATE, "urls": urls,
+            }
 
 
 def reviewed_urls(retailer_slug):

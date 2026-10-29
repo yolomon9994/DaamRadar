@@ -2,6 +2,8 @@
 
 Initial review: 18 October 2026; reliability follow-up: 20 October; pantry expansion: 24 October 2026. These are point-in-time observations from this environment. Public crawler rules and technical reachability do not establish a general license to reuse a website or its contents. The current collector is a small, manually invoked prototype that records factual product/offer fields only.
 
+**29 October update:** the [broader reviewed catalog](expanded-catalog.md) now has 31 collected products and 40 listings: 28 Jalal Sons URLs and twelve exact allowlisted Cartpk URLs. Nine products have both sources, including the newly reviewed Milkpak Cream 200ml pair; 22 remain single-source. Six import runs succeeded after the existing named client rechecked robots and canonical terms. Earlier reviews/counts below are historical. Delivery areas remain unverified, and no other source was enabled.
+
 ## Initial observations
 
 Three real observations were imported through the tested Jalal Sons collector:

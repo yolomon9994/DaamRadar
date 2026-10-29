@@ -18,7 +18,7 @@ Run from the project directory in PowerShell:
 
 The command visits **Jalal Sons, then Cartpk**, in that fixed order. Each source finishes and closes its client before the next starts. It delegates to the existing collector with `--refresh-existing --stale-only`: only existing collected listings with a collected product and a saved URL are considered, using the current `PRICE_STALE_HOURS` cutoff. It creates no source records, discovers no URLs and does not import missing products. On a fresh checkout, seed/configure the reviewed sources and perform their reviewed first-time batch imports first.
 
-The original collection gates, exact-URL validation, ten-URL limit per source, robots checks, fixed identity, crawl delays, timeout recovery and run-overlap constraint remain in place. The wrapper does not enable a source, clear a running job, split an oversized target set, retry a failed retailer, rotate identities or bypass denials. A default pause explanation now also exists on public-product adapters, so turning their code-level flag off reports a blocked source cleanly even without a custom reason.
+The original collection gates, exact-URL validation, ten-URL limit per source, robots checks, fixed identity, crawl delays, timeout recovery and run-overlap constraint remain in place. As of the [29 October catalog expansion](expanded-catalog.md), a larger existing target set selects the oldest ten distinct URLs and prints a notice; remaining due URLs require another explicit manual invocation. The wrapper does not enable a source, clear a running job, split the selection into extra runs, retry a failed retailer, rotate identities or bypass denials. Failed URLs retain their old timestamps and may remain at the front of the next selection; inspect failures first.
 
 Fresh or empty target sets produce `no_work`, with no HTTP client, request, new audit run, report file or history entry. This describes the target selection, not source availability or configuration: the existing collector checks collection gates when there is work to do. A missing retailer record is an error; use `seed_retailers` rather than expecting this wrapper to configure it.
 
@@ -33,7 +33,7 @@ Every invocation prints one combined summary after the individual collector outp
 | `failed` / `blocked` | The collector recorded a failed attempt or a configuration/access refusal. |
 | `no_work` | No stale existing URLs were selected; no new run exists. |
 | `dry_run` | URL preview only; no requests, writes or run records. |
-| `error` | The attempt was rejected before creating a run, such as an existing active run, missing retailer or oversized target set. An unexpected programming/database exception also prints the available summary before propagating. |
+| `error` | The attempt was rejected before creating a run, such as an existing active run or missing retailer. An unexpected programming/database exception also prints the available summary before propagating. |
 | `report_error` | Collection succeeded in the database, but its requested report export failed. The successful run and observations are retained. |
 | `interrupted` / `not_attempted` | The operator interrupted the active source; remaining sources did not start. |
 

@@ -1,8 +1,10 @@
-"""Manually reviewed single-item product pairs; no automatic URL discovery.
+"""Manually reviewed single-item products; no automatic URL discovery.
 
-Milk pairs were reviewed on 20 October; pantry pairs on 24 October 2026. Adding a pair
+Milk pairs were reviewed on 20 October; pantry pairs on 24 October; additional
+single-source products and the cream pair on 29 October 2026. Adding a product
 requires a fresh access/markup review and factual-extract regression fixtures.
 """
+from .expansion import EXPANSION_PRODUCTS, EXPANSION_REVIEW_DATE
 
 MILK_REVIEW_DATE = "2026-10-20"
 MILK_COMPARISON_PRODUCTS = (
@@ -61,11 +63,13 @@ PANTRY_COMPARISON_PRODUCTS = (
     },
 )
 
-# Keep the original milk tuple/batches stable; the registry covers all reviewed pairs.
+# Keep the original milk tuple/batches stable; the registry covers reviewed products.
 REVIEWED_PRODUCTS = tuple({**item, "category": "dairy", "illustration": "milk", "reviewed_at": MILK_REVIEW_DATE}
-                          for item in MILK_COMPARISON_PRODUCTS) + PANTRY_COMPARISON_PRODUCTS
+                          for item in MILK_COMPARISON_PRODUCTS) + PANTRY_COMPARISON_PRODUCTS + tuple(
+                              {**item, "reviewed_at": EXPANSION_REVIEW_DATE} for item in EXPANSION_PRODUCTS)
 REVIEWED_BY_SOURCE = {
-    "jalal-sons": {item["jalal_path"]: item for item in REVIEWED_PRODUCTS},
-    "cartpk": {item["cartpk_path"]: item for item in REVIEWED_PRODUCTS},
+    "jalal-sons": {item["jalal_path"]: item for item in REVIEWED_PRODUCTS if "jalal_path" in item},
+    "cartpk": {item["cartpk_path"]: item for item in REVIEWED_PRODUCTS if "cartpk_path" in item},
 }
-COLLECTION_CATEGORIES = {"dairy": ("Dairy & eggs", "milk"), "pantry": ("Pantry essentials", "jar")}
+COLLECTION_CATEGORIES = {"dairy": ("Dairy & eggs", "milk"), "pantry": ("Pantry essentials", "jar"),
+                         "drinks": ("Drinks & tea", "tea"), "household": ("Household", "cleaning")}

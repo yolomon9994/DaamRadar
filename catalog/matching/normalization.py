@@ -11,7 +11,7 @@ BRANDS = {"olpers": ["olper s", "olpers"], "nutella": ["nutella"],
           "national": ["national"], "shan": ["shan"], "tapal": ["tapal"],
           "lipton": ["lipton"], "dalda": ["dalda"], "nestle": ["nestle", "nestlé"],
           "peek freans": ["peek freans"], "mitchells": ["mitchell s", "mitchells"],
-          "nurpur": ["nurpur"], "haleeb": ["haleeb"]}
+          "nurpur": ["nurpur"], "haleeb": ["haleeb"], "evian": ["evian"], "malee": ["malee"]}
 SIZE_RE = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)\s*(kilograms?|kgs?|grams?|gms?|gm|g|millilit(?:er|re)s?|ml|lit(?:er|re)s?|ltr?s?|l|pcs?|pieces?)\b")
 VARIANT_WORDS = {"chocolate", "strawberry", "vanilla", "banana", "mango", "orange", "lemon", "lime",
                  "masala", "salted", "plain", "classic", "barbecue", "bbq", "chilli", "chili", "mint",

@@ -70,6 +70,10 @@ class Command(BaseCommand):
             urls = [url for url in urls if url in self.permitted_urls]
         if options.get("missing_only"):
             urls = missing_import_urls(retailer, urls)
+        if options["refresh_existing"] and len(urls) > 10:
+            self.stdout.write(f"Selected the oldest 10 of {len(urls)} existing URLs. "
+                              "Remaining URLs need another explicit manual refresh; no extra runs are started.")
+            urls = urls[:10]
         if len(urls) > 10:
             raise CommandError("At most 10 distinct URLs may be collected in one manual run; select a smaller batch.")
         return urls
