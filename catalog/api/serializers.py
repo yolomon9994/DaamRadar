@@ -1,5 +1,24 @@
+import re
+
 from rest_framework import serializers
 from catalog.models import Category, PriceHistory, Product, Retailer, RetailerListing
+
+
+class BasketQuerySerializer(serializers.Serializer):
+    source = serializers.ChoiceField(choices=["demo", "live"], default="demo")
+    items = serializers.ListField(child=serializers.CharField(trim_whitespace=False), max_length=50, default=list)
+
+    def validate_items(self, values):
+        result, seen = [], set()
+        for value in values:
+            if not re.fullmatch(r"[-a-zA-Z0-9_]{1,280}:[1-9][0-9]?", value):
+                raise serializers.ValidationError("Use product-slug:quantity, with a quantity from 1 to 99.")
+            slug, quantity = value.rsplit(":", 1)
+            if slug in seen:
+                raise serializers.ValidationError("Each product can appear only once.")
+            seen.add(slug)
+            result.append((slug, int(quantity)))
+        return result
 
 
 class RetailerSerializer(serializers.ModelSerializer):

@@ -59,9 +59,16 @@ Try `Olpers Milk 1L` in the collected catalog. The website and API default to co
 
 `seed_demo` can be rerun: it refreshes demo observations without duplicating products/listings or creating a fictitious history trend. It never modifies live products. To initialize retailer records without sample products, use `python manage.py seed_retailers`.
 
+## Plan a shopping list
+
+Select **Add to list** on product cards or detail pages, then open **Shopping list** in the header. Adjust pack quantities and compare retailer coverage, included-item subtotals and full observed estimates where available. Missing, stale or unavailable items are flagged; incomplete baskets never receive a full total. Delivery-area conflicts also withhold full estimates, and unverified areas carry a warning. Delivery fees and checkout charges are excluded.
+
+Demo and collected lists stay separate and are saved in the same browser without an account. JavaScript and browser storage enable persistence; the page warns if storage is unavailable. No live collection runs when using the list. See [shopping-list behavior, API and checks](docs/shopping-list.md).
+
 ## Implemented
 
 - Responsive homepage, category navigation, search, comparison cards, detail tables, source transparency, and empty/error states.
+- Browser-saved shopping lists with pack quantities, separate demo/collected lists and read-only retailer basket estimates. Per-item exclusions and coverage keep incomplete subtotals separate from full estimates; no cheapest-basket claim is made. See [shopping lists](docs/shopping-list.md).
 - Local database search with case-insensitive partial and fuzzy matches; compatible size filtering; category/retailer/brand filters; price sorting; pagination.
 - Separate canonical products, categories, retailers, listings, observations, and scrape audit runs, with migrations and database constraints.
 - Normalized metric quantities, brand aliases, pack counts, variant and packaging guards, GTIN checks, RapidFuzz ranking, and conservative canonical linking.
@@ -87,6 +94,7 @@ Try `Olpers Milk 1L` in the collected catalog. The website and API default to co
 | `GET /api/categories/` | Grocery categories |
 | `GET /api/retailers/` | Retailers, availability status, and access notes |
 | `GET /api/listings/<id>/history/` | Paginated newest-first price observations |
+| `GET /api/basket/?source=demo&item=<slug>:<quantity>` | Read-only retailer basket coverage and item-price estimates |
 | `GET /health/` | Database connectivity readiness; generic 200/503 response |
 
 Product list parameters: `q`, `category` (slug), `retailer` (slug), `brand`, `source=demo|live`, `sort=relevance|price_asc|price_desc`, `page`, and `page_size` (up to 48).
@@ -218,7 +226,7 @@ docs/                     Architecture and dated source investigation
 
 ## Current focus and next implementation phase
 
-The current distribution target is a downloadable local application and reproducible data science portfolio. Hosting is deferred; the production tooling remains available for later use. Next, add a documented analysis export/EDA workflow and measure product-matching performance on independently labeled examples. These are planned analytical milestones, not completed accuracy or market findings; see the [case study](docs/data-science-case-study.md).
+The current distribution target is a downloadable local application with useful grocery-planning features. Hosting is deferred; the production tooling remains available for later use. Shopping lists and retailer basket estimates now support planning across multiple products. The [portfolio case study](docs/data-science-case-study.md) records implemented data work and possible future analytical milestones separately.
 
 Eight real cross-retailer listed-price pairs are functional across dairy and pantry in the author's development database. The [24 October delivery investigation](docs/delivery-areas.md) found public delivery claims but no verified shared price/stock scope; comparison requires explicit observation-level evidence. A supported location-specific page/feed and sustained source reliability remain future research. Naheed needs its denied access resolved without identity switching. Establish appropriate broader reuse arrangements and a safe frequency before publishing a large dataset or scheduling collection.
 

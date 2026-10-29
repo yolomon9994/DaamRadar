@@ -35,3 +35,7 @@ def sources(request):
         "retailers": retailers,
         "collected_count": RetailerListing.objects.filter(is_demo=False, product__is_demo=False).count(),
     })
+
+
+def shopping_list(request):
+    return render(request, "catalog/shopping_list.html", {"source": select_source(request.GET)})

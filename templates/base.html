@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="{% static 'vendor/bootstrap.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <script src="{% static 'js/app.js' %}" defer></script>
+  <script src="{% static 'js/shopping-list.js' %}" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -17,8 +18,10 @@
   <header class="site-header"><nav class="container nav-inner" aria-label="Main navigation">
     <a class="brand" href="{% url 'home' %}" aria-label="DaamRadar home"><span class="brand-mark">◉<i></i></span>Daam<span>Radar</span><span class="brand-period">.</span></a>
     <div class="nav-links"><a href="{% url 'home' %}#explore">Explore groceries</a><a href="{% url 'home' %}#how-it-works">How it works</a><a href="{% url 'sources' %}">Our sources <span aria-hidden="true">↗</span></a></div>
+    <a class="shopping-nav" href="{% url 'shopping-list' %}{% if source %}?source={{ source }}{% endif %}">Shopping list <span data-list-total>0</span></a>
     <span class="country-tag"><span aria-hidden="true">☾</span> Pakistan <small>PKR</small></span>
   </nav></header>
   <main id="main">{% block content %}{% endblock %}</main>
+  <p class="shopping-feedback" data-list-feedback role="status" aria-live="polite" hidden></p>
   <footer class="site-footer"><div class="container footer-top"><a class="brand" href="{% url 'home' %}">Daam<span>Radar</span>.</a><p>A smarter start to your grocery run.</p><a href="{% url 'sources' %}">Data & source transparency ↗</a></div><div class="container footer-bottom"><span>Built for Pakistan. Prices in PKR.</span><span>Listed prices only. Delivery, location, and checkout charges may differ.</span></div></footer>
 </body></html>

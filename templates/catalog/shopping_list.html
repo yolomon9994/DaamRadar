@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Your shopping list — DaamRadar{% endblock %}
+{% block content %}
+<div class="container shopping-container" data-shopping-list data-source="{{ source }}" data-estimate-url="{% url 'api-basket' %}">
+  <span class="eyebrow">PLAN YOUR GROCERY RUN</span>
+  <h1>Your shopping list</h1>
+  <p>Save products, adjust quantities and check retailer coverage. Your list stays in this browser; no account is needed.</p>
+  <div class="list-toolbar">
+    <div class="source-switch" aria-label="Shopping list catalog">
+      <a href="?source=demo" {% if source == 'demo' %}aria-current="true"{% endif %}>Demo list <span data-list-count="demo">0</span></a>
+      <a href="?source=live" {% if source == 'live' %}aria-current="true"{% endif %}>Collected list <span data-list-count="live">0</span></a>
+    </div>
+    <a class="text-link" href="{% url 'home' %}?source={{ source }}#explore">Add more groceries</a>
+  </div>
+  <div class="data-notice"><span class="notice-symbol" aria-hidden="true">i</span><p>{% if source == 'demo' %}<strong>Fictional demo basket.</strong> Sample prices demonstrate the feature; they are not current retailer quotes.{% else %}<strong>Observed item-price estimates.</strong> Delivery fees and checkout charges are excluded. Delivery-area availability and final costs must be confirmed with each retailer.{% endif %} Missing, stale and unavailable items are excluded. Retailers are listed alphabetically; no cheapest-retailer or savings claim is made.</p></div>
+  <noscript><p class="data-notice">Enable JavaScript to save a shopping list in this browser and calculate basket estimates. You can still <a href="{% url 'home' %}?source={{ source }}#explore">browse products</a> without it.</p></noscript>
+  <p data-list-message role="status" aria-live="polite"></p>
+  <div data-list-empty hidden class="empty-state"><h2>Your list is empty</h2><p>Add products from their cards or detail pages to start planning.</p><a class="primary-button" href="{% url 'home' %}?source={{ source }}#explore">Explore groceries</a></div>
+  <div data-list-content hidden>
+    <div class="section-heading"><h2>Items to buy</h2><button type="button" class="list-action" data-list-clear>Clear this list</button></div>
+    <p class="muted">Quantity counts packs of the exact product shown. Up to 50 products, with 1–99 packs each.</p>
+    <ul class="shopping-items" data-list-items></ul>
+    <div class="section-heading"><h2>Retailer basket estimates</h2><button type="button" class="button-small" data-list-refresh>Refresh estimates</button></div>
+    <p>Each subtotal covers only the included items. A full estimate requires every item and consistent delivery-area information. Stock and quantities are observations, not a reservation.</p>
+    <div class="basket-grid" data-list-estimates></div>
+  </div>
+</div>
+{% endblock %}
