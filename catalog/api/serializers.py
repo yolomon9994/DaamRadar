@@ -1,4 +1,5 @@
 import re
+from decimal import Decimal
 
 from rest_framework import serializers
 from catalog.models import Category, PriceHistory, Product, Retailer, RetailerListing
@@ -7,6 +8,12 @@ from catalog.models import Category, PriceHistory, Product, Retailer, RetailerLi
 class BasketQuerySerializer(serializers.Serializer):
     source = serializers.ChoiceField(choices=["demo", "live"], default="demo")
     items = serializers.ListField(child=serializers.CharField(trim_whitespace=False), max_length=50, default=list)
+    unresolved = serializers.ListField(child=serializers.RegexField(r"\A[-a-zA-Z0-9_]{1,280}\Z"), max_length=50, default=list)
+
+    def validate(self, data):
+        if not set(data["unresolved"]).issubset({slug for slug, _ in data["items"]}):
+            raise serializers.ValidationError("Unresolved items must belong to this list.")
+        return data
 
     def validate_items(self, values):
         result, seen = [], set()
@@ -19,6 +26,57 @@ class BasketQuerySerializer(serializers.Serializer):
             seen.add(slug)
             result.append((slug, int(quantity)))
         return result
+
+
+class StrictDocumentSerializer(serializers.Serializer):
+    def to_internal_value(self, data):
+        if isinstance(data, dict) and set(data) - set(self.fields):
+            raise serializers.ValidationError({"non_field_errors": [
+                "Unexpected fields in this list file. Use a DaamRadar list export without prices."]})
+        return super().to_internal_value(data)
+
+
+class StrictIntegerField(serializers.IntegerField):
+    def to_internal_value(self, data):
+        if isinstance(data, bool):
+            self.fail("invalid")
+        return super().to_internal_value(data)
+
+
+class TransferProductSerializer(StrictDocumentSerializer):
+    name = serializers.CharField(max_length=255, trim_whitespace=False)
+    brand = serializers.CharField(max_length=100, allow_blank=True, trim_whitespace=False)
+    quantity = serializers.DecimalField(max_digits=10, decimal_places=3, min_value=Decimal("0.001"), allow_null=True)
+    unit = serializers.ChoiceField(choices=["", "ml", "g", "pc"])
+    pack_count = StrictIntegerField(min_value=1, max_value=32767)
+    variant = serializers.CharField(max_length=120, allow_blank=True, trim_whitespace=False)
+    packaging = serializers.CharField(max_length=40, allow_blank=True, trim_whitespace=False)
+    gtin = serializers.CharField(max_length=14, allow_blank=True, trim_whitespace=False)
+    size = serializers.CharField(max_length=80, required=False)  # Display hint only; recomputed, never trusted.
+
+    def validate(self, data):
+        if (data["quantity"] is None) != (data["unit"] == ""):
+            raise serializers.ValidationError("Quantity and its normalized unit must both be known, or both unspecified.")
+        return data
+
+
+class TransferItemSerializer(StrictDocumentSerializer):
+    slug = serializers.RegexField(r"\A[-a-zA-Z0-9_]{1,280}\Z")
+    quantity = StrictIntegerField(min_value=1, max_value=99)
+    product = TransferProductSerializer(allow_null=True)
+
+
+class ListTransferSerializer(StrictDocumentSerializer):
+    format = serializers.ChoiceField(choices=["daamradar-shopping-list"])
+    version = StrictIntegerField(min_value=1, max_value=1)
+    source = serializers.ChoiceField(choices=["demo", "live"])
+    exported_at = serializers.DateTimeField()
+    items = TransferItemSerializer(many=True, allow_empty=False, max_length=50)
+
+    def validate_items(self, items):
+        if len({item["slug"] for item in items}) != len(items):
+            raise serializers.ValidationError("Duplicate product references are not allowed in a list file.")
+        return items
 
 
 class RetailerSerializer(serializers.ModelSerializer):

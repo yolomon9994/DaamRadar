@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Your shopping list — DaamRadar{% endblock %}
 {% block content %}
-<div class="container shopping-container" data-shopping-list data-source="{{ source }}" data-estimate-url="{% url 'api-basket' %}">
+<div class="container shopping-container" data-shopping-list data-source="{{ source }}" data-estimate-url="{% url 'api-basket' %}" data-transfer-url="{% url 'api-list-import-preview' %}">
   <span class="eyebrow">PLAN YOUR GROCERY RUN</span>
   <h1>Your shopping list</h1>
   <p>Save products, adjust quantities and check retailer coverage. Your list stays in this browser; no account is needed.</p>
@@ -15,6 +15,29 @@
   <div class="data-notice"><span class="notice-symbol" aria-hidden="true">i</span><p>{% if source == 'demo' %}<strong>Fictional demo basket.</strong> Sample prices demonstrate the feature; they are not current retailer quotes.{% else %}<strong>Observed item-price estimates.</strong> Delivery fees and checkout charges are excluded. Delivery-area availability and final costs must be confirmed with each retailer.{% endif %} Missing, stale and unavailable items are excluded. Retailers are listed alphabetically; no cheapest-retailer or savings claim is made.</p></div>
   <noscript><p class="data-notice">Enable JavaScript to save a shopping list in this browser and calculate basket estimates. You can still <a href="{% url 'home' %}?source={{ source }}#explore">browse products</a> without it.</p></noscript>
   <p data-list-message role="status" aria-live="polite"></p>
+  <section class="list-transfer" data-list-transfer hidden aria-labelledby="list-transfer-title">
+    <h2 id="list-transfer-title">Back up or transfer your list</h2>
+    <p>Download an editable JSON list with product names, pack sizes and quantities. Importing previews local matches before you change anything. Prices and purchase marks are never restored from a file.</p>
+    <div class="list-toolbar">
+      <button type="button" class="button-small" data-list-download disabled>Download list JSON</button>
+      <label for="list-file">Preview a list file <input id="list-file" type="file" accept=".json,application/json" data-list-file></label>
+    </div>
+    <p data-transfer-note role="status" aria-live="polite"></p>
+    <div data-transfer-preview hidden>
+      <h3>Import preview</h3>
+      <p>Clear matches use this catalog. Unavailable or ambiguous products stay on your list as unpriced items for review. Demo and collected lists stay separate.</p>
+      <div class="table-responsive" tabindex="0" role="region" aria-label="List import preview; scroll sideways on small screens"><table class="table transfer-table">
+        <thead><tr><th scope="col">Imported product</th><th scope="col">Pack size</th><th scope="col">Packs</th><th scope="col">Local match</th><th scope="col">Details</th></tr></thead><tbody data-transfer-rows></tbody>
+      </table></div>
+      <fieldset class="transfer-options"><legend>How should this file change the current list?</legend>
+        <label><input type="radio" name="transfer-mode" value="merge" data-transfer-mode checked> Merge — add quantities to matching items</label>
+        <label><input type="radio" name="transfer-mode" value="replace" data-transfer-mode> Replace this catalog's current list</label>
+      </fieldset>
+      <p data-transfer-summary aria-live="polite"></p>
+      <button type="button" class="button-small" data-transfer-apply disabled>Apply merge</button>
+      <button type="button" class="list-action" data-transfer-cancel>Cancel import</button>
+    </div>
+  </section>
   <div data-list-empty hidden class="empty-state"><h2>Your list is empty</h2><p>Add products from their cards or detail pages to start planning.</p><a class="primary-button" href="{% url 'home' %}?source={{ source }}#explore">Explore groceries</a></div>
   <div data-list-content hidden>
     <div class="section-heading"><h2>Items to buy</h2><button type="button" class="list-action" data-list-clear>Clear this list</button></div>

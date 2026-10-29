@@ -67,11 +67,14 @@ Demo and collected lists stay separate and are saved in the same browser without
 
 To take a checklist to the store, open **Take your list with you**, select a retailer (or items only), and choose **Print / Save as PDF**. The print view includes pack sizes, quantities, purchase checkboxes, dated observations and any exclusion/area warnings. Choose **Save as PDF** in the browser's print dialog to keep a copy on your phone. See [printing instructions](docs/shopping-list.md#print-a-checklist-or-save-a-pdf).
 
+To back up or move an editable list, use **Back up or transfer your list → Download list JSON**. On another local installation, choose **Preview a list file**, review local matches, then **Merge** quantities or **Replace** that catalog's list. Files contain product identities and quantities; prices come from the receiving database. Uncertain matches remain visible and unpriced. See [transfer rules and file format](docs/shopping-list.md#back-up-or-transfer-an-editable-list).
+
 ## Implemented
 
 - Responsive homepage, category navigation, search, comparison cards, detail tables, source transparency, and empty/error states.
 - Browser-saved shopping lists with pack quantities, separate demo/collected lists and read-only retailer basket estimates. Per-item exclusions and coverage keep incomplete subtotals separate from full estimates; no cheapest-basket claim is made. See [shopping lists](docs/shopping-list.md).
 - Retailer-selectable shopping checklists for browser printing/Save as PDF, with pack sizes, purchase checkboxes, check dates and exclusions. Items-only mode omits prices; printed totals retain the same basket safeguards.
+- Shopping-list JSON downloads and import previews with explicit merge/replace choices, conservative local identity matching, catalog separation and retained unpriced items. Imports never restore prices or modify the catalog.
 - Local database search with case-insensitive partial and fuzzy matches; compatible size filtering; category/retailer/brand filters; price sorting; pagination.
 - Separate canonical products, categories, retailers, listings, observations, and scrape audit runs, with migrations and database constraints.
 - Normalized metric quantities, brand aliases, pack counts, variant and packaging guards, GTIN checks, RapidFuzz ranking, and conservative canonical linking.
@@ -100,6 +103,7 @@ To take a checklist to the store, open **Take your list with you**, select a ret
 | `GET /api/retailers/` | Retailers, availability status, and access notes |
 | `GET /api/listings/<id>/history/` | Paginated newest-first price observations |
 | `GET /api/basket/?source=demo&item=<slug>:<quantity>` | Read-only retailer basket coverage and item-price estimates |
+| `POST /api/shopping-list/preview/` | Read-only list-file validation and local product resolution; no list or catalog writes |
 | `GET /health/` | Database connectivity readiness; generic 200/503 response |
 
 Product list parameters: `q`, `category` (slug), `retailer` (slug), `brand`, `source=demo|live`, `sort=relevance|price_asc|price_desc`, `page`, and `page_size` (up to 48).

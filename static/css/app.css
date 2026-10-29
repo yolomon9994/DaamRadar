@@ -2049,6 +2049,25 @@ h3 {
   padding-top:30px;
   border-top:1px solid var(--border);
 }
+.list-transfer {
+  margin:24px 0 32px;
+  padding:24px;
+  background:var(--cream);
+  border:1px solid var(--border);
+  border-radius:12px;
+}
+.list-transfer input[type="file"] {
+  display:block;
+  max-width:100%;
+  margin-top:8px;
+}
+.list-transfer .list-toolbar > label { min-width:0; max-width:100%; }
+.transfer-table { min-width:700px; }
+.transfer-table td { overflow-wrap:anywhere; max-width:260px; }
+.transfer-options { margin:20px 0; }
+.transfer-options legend { font-size:16px; font-weight:600; }
+.transfer-options label { display:block; margin:10px 0; }
+.list-transfer button:disabled { opacity:.55; cursor:not-allowed; }
 .print-controls label {
   display:flex;
   flex-direction:column;

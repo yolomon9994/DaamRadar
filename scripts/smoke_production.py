@@ -101,7 +101,7 @@ def main():
                     check(redirect.status_code == 301 and redirect.headers["Location"].startswith("https://"), "HTTP redirects to HTTPS")
                     home = client.get(base + "/?source=demo", headers=headers, timeout=5)
                     check(home.status_code == 200 and "fictional" in home.text, "Production homepage with explicit demo data")
-                    for asset in ("css/app.css", "js/app.js", "js/shopping-list.js"):
+                    for asset in ("css/app.css", "js/app.js", "js/list-transfer.js", "js/shopping-list.js"):
                         path = "/static/" + manifest[asset]
                         check(path in home.text, f"Homepage references hashed {asset}")
                         response = client.get(base + path, headers=headers, timeout=5)
@@ -114,6 +114,13 @@ def main():
                     check(shopping.status_code == 200 and "Fictional demo basket" in shopping.text, "Production shopping list page")
                     basket = client.get(base + "/api/basket/?source=demo&item=demo-olpers-milk-1l:2", headers=headers, timeout=5)
                     check(basket.status_code == 200 and all(row["is_complete"] for row in basket.json()["retailers"]), "Production basket estimates")
+                    preview = client.post(base + "/api/shopping-list/preview/", headers=headers, timeout=5, json={
+                        "format": "daamradar-shopping-list", "version": 1, "source": "demo",
+                        "exported_at": basket.json()["estimated_at"], "items": [{
+                            "slug": "remote-generated-product-id", "quantity": 2,
+                            "product": basket.json()["items"][0]["product"]}]})
+                    check(preview.status_code == 200 and preview.json()["items"][0]["slug"] == "demo-olpers-milk-1l"
+                          and "no-store" in preview.headers["Cache-Control"], "Production read-only list import preview")
                     login = client.get(base + "/admin/login/", headers=headers, timeout=5)
                     check(login.status_code == 200 and "Secure" in login.headers.get("Set-Cookie", ""), "Admin CSRF cookie uses Secure")
                     missing = client.get(base + "/does-not-exist/", headers=headers, timeout=5)

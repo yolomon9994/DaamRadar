@@ -2,6 +2,7 @@
 
 (() => {
   const key = "daamradar.shopping-list.v1";
+  const transfer = window.DaamRadarListTransfer;
   const page = document.querySelector("[data-shopping-list]");
   const feedback = document.querySelector("[data-list-feedback]");
   let storageWarning = "";
@@ -28,8 +29,7 @@
           seen.add(item.slug);
         }
       }
-      return {demo: saved.demo.map(({slug, quantity}) => ({slug, quantity})),
-        live: saved.live.map(({slug, quantity}) => ({slug, quantity}))};
+      return {demo: saved.demo.map(transfer.cleanEntry), live: saved.live.map(transfer.cleanEntry)};
     } catch (_) {
       storageWarning = "Saved lists could not be read. This page will use an empty list until you add products.";
       return {demo: [], live: []};
@@ -102,6 +102,7 @@
   const message = page.querySelector("[data-list-message]");
   const estimates = page.querySelector("[data-list-estimates]");
   const refreshButton = page.querySelector("[data-list-refresh]");
+  let updateTransfer = () => {};
   const printSection = page.querySelector("[data-list-print]");
   const printSheet = page.querySelector("[data-print-sheet]");
   const printUnavailable = page.querySelector("[data-print-unavailable]");
@@ -238,8 +239,9 @@
   function updateNames() {
     list.querySelectorAll("[data-item-name]").forEach((node) => {
       const info = names.get(node.dataset.itemName);
-      node.textContent = info ? info.name : node.dataset.itemName;
-      if (info && !info.available) {
+      const saved = state[source].find((item) => item.slug === node.dataset.itemName);
+      node.textContent = info ? info.name + (info.available ? "" : " — unavailable") : saved?.product?.name || node.dataset.itemName;
+      if (saved?.unresolved || (info && !info.available)) {
         node.removeAttribute("href");
         node.setAttribute("aria-disabled", "true");
       } else {
@@ -272,6 +274,7 @@
           estimates.replaceChildren();
           estimates.removeAttribute("aria-busy");
           invalidatePrint("Correct quantities to whole numbers from 1 to 99 before printing.");
+          updateTransfer();
           message.textContent = "Enter a whole quantity from 1 to 99 to update estimates. The last valid quantity is saved.";
           return;
         }
@@ -337,6 +340,7 @@
     const requestRevision = ++revision;
     invalidatePrint("Estimates are not ready. Load valid estimates before printing a shopping checklist.");
     if (rebuild) renderItems();
+    updateTransfer();
     empty.hidden = state[source].length > 0;
     content.hidden = state[source].length === 0;
     estimates.replaceChildren();
@@ -355,16 +359,36 @@
     estimates.setAttribute("aria-busy", "true");
     controller = new AbortController();
     const query = new URLSearchParams({source});
-    state[source].forEach((item) => query.append("item", item.slug + ":" + item.quantity));
+    state[source].forEach((item) => {
+      query.append("item", item.slug + ":" + item.quantity);
+      if (item.unresolved) query.append("unresolved", item.slug);
+    });
     try {
       const response = await fetch(page.dataset.estimateUrl + "?" + query, {signal: controller.signal, cache: "no-store"});
       if (!response.ok) throw new Error("Estimate request failed");
       const data = await response.json();
       if (requestRevision !== revision) return;
+      let metadataChanged = false;
+      data.items.forEach((item) => {
+        const saved = state[source].find((entry) => entry.slug === item.slug);
+        if (item.product && saved && !saved.unresolved) {
+          const product = transfer.cleanProduct(item.product);
+          if (JSON.stringify(saved.product) !== JSON.stringify(product)) {
+            saved.product = product;
+            metadataChanged = true;
+          }
+        }
+        if (!item.available && saved?.product) {
+          item.name = saved.product.name;
+          item.size = saved.product.size;
+        }
+      });
+      if (metadataChanged) save();
       data.items.forEach((item) => names.set(item.slug, item));
       updateNames();
       renderEstimates(data);
       preparePrint(data);
+      updateTransfer();
       message.textContent = "Estimates updated. Prices are dated observations; delivery and checkout charges are excluded.";
     } catch (error) {
       if (error.name !== "AbortError" && requestRevision === revision) {
@@ -383,5 +407,15 @@
     page.querySelector("a").focus();
   });
   refreshButton.addEventListener("click", () => refresh(false));
+  updateTransfer = transfer.mount({page, source, read: () => state[source].map(transfer.cleanEntry),
+    hasInvalidQuantities: () => Boolean(list.querySelector("[aria-invalid='true']")),
+    commit: (entries) => {
+      state[source] = entries;
+      pickedUp.clear();
+      const persisted = save();
+      updateCounts();
+      refresh(true);
+      return persisted;
+    }});
   refresh(true);
 })();

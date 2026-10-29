@@ -7,18 +7,19 @@ from django.conf import settings
 from django.utils import timezone
 
 from catalog.models import Product, Retailer, RetailerListing
+from catalog.services.list_transfer import product_descriptor
 
 
 def money(value):
     return format(value, ".2f") if value is not None else None
 
 
-def estimate_basket(items, source):
+def estimate_basket(items, source, unresolved=()):
     """Items have already been validated as unique (slug, quantity) pairs."""
     demo = source == "demo"
     checked_at = timezone.now()
     cutoff = checked_at - timedelta(hours=settings.PRICE_STALE_HOURS)
-    products = {p.slug: p for p in Product.objects.filter(slug__in=[s for s, _ in items], is_demo=demo)}
+    products = {p.slug: p for p in Product.objects.filter(slug__in=[s for s, _ in items], is_demo=demo).exclude(slug__in=unresolved)}
     offers = defaultdict(list)
     for offer in RetailerListing.objects.filter(product__in=products.values(), is_demo=demo).select_related("retailer"):
         offers[(offer.retailer_id, offer.product_id)].append(offer)
@@ -29,6 +30,7 @@ def estimate_basket(items, source):
         "items": [{"slug": slug, "quantity": quantity,
                    "name": products[slug].canonical_name if slug in products else "Product unavailable in this catalog",
                    "size": products[slug].size_label if slug in products else "Size unavailable",
+                   "product": product_descriptor(products[slug]) if slug in products else None,
                    "available": slug in products} for slug, quantity in items],
         "retailers": [],
     }
