@@ -175,6 +175,10 @@ class ScrapeRun(models.Model):
 
 
 class AdminPriceRefresh(models.Model):
+    class Kind(models.TextChoices):
+        REFRESH = "refresh", "Price refresh"
+        IMPORT = "import", "Catalog import"
+
     class Status(models.TextChoices):
         QUEUED = "queued", "Queued"
         RUNNING = "running", "Running"
@@ -184,6 +188,9 @@ class AdminPriceRefresh(models.Model):
         STOPPED = "stopped", "Stopped by operator"
 
     singleton = models.PositiveSmallIntegerField(default=1, editable=False)
+    kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.REFRESH)
+    batch = models.CharField(max_length=80, blank=True)
+    targets = models.JSONField(default=list)
     requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(default=timezone.now)
     started_at = models.DateTimeField(null=True, blank=True)
@@ -197,9 +204,12 @@ class AdminPriceRefresh(models.Model):
 
     class Meta:
         ordering = ["-created_at", "-pk"]
-        permissions = [("run_price_refresh", "Can manually refresh reviewed prices")]
+        permissions = [("run_price_refresh", "Can manually refresh reviewed prices"),
+                       ("import_reviewed_catalog", "Can import reviewed catalog batches")]
         constraints = [
             models.CheckConstraint(condition=models.Q(singleton=1), name="admin_refresh_singleton"),
+            models.CheckConstraint(condition=models.Q(kind="refresh", batch="") | (models.Q(kind="import") & ~models.Q(batch="")),
+                                   name="admin_collection_kind_batch"),
             models.UniqueConstraint(fields=["singleton"], condition=models.Q(status__in=["queued", "running"]),
                                     name="one_active_admin_refresh"),
         ]

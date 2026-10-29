@@ -20,6 +20,7 @@ from catalog.scraping.adapters import ADAPTERS
 from catalog.scraping.batches import reviewed_urls
 from catalog.scraping.types import CollectionError
 from catalog.services.collection_health import can_view_collection_health
+from catalog.services.catalog_import import get_import_batch
 
 OUTCOME_LABELS = {
     "not_attempted": "Not attempted", "running": "In progress", "success": "Completed",
@@ -33,6 +34,10 @@ def can_start_refresh(user):
     return can_view_collection_health(user) and user.has_perm("catalog.run_price_refresh")
 
 
+def can_start_import(user):
+    return can_view_collection_health(user) and user.has_perm("catalog.import_reviewed_catalog")
+
+
 def validate_worker_database():
     database = settings.DATABASES["default"]
     if database["ENGINE"] not in {"django.db.backends.sqlite3", "django.db.backends.postgresql"}:
@@ -42,7 +47,7 @@ def validate_worker_database():
         raise ValidationError("A separate refresh worker needs a file-based SQLite or PostgreSQL database.")
 
 
-def validate_refresh(sources):
+def validate_sources(sources):
     if not sources or any(source not in REVIEWED_RETAILERS for source in sources) or len(set(sources)) != len(sources):
         raise ValidationError("Choose only the reviewed Jalal Sons and Cartpk sources.")
     if not settings.SCRAPING_ENABLED:
@@ -57,7 +62,7 @@ def validate_refresh(sources):
         raise ValidationError("Configure SCRAPER_CONTACT with a monitored email or public HTTPS contact URL first.") from None
     if ScrapeRun.objects.filter(retailer__slug__in=sources, status="running").exists():
         raise ValidationError("A selected retailer already has a running collection. Inspect that run first.")
-    collector = ScrapeCommand()
+    retailers = {}
     for source in sources:
         retailer = Retailer.objects.filter(slug=source).first()
         if not retailer:
@@ -65,6 +70,15 @@ def validate_refresh(sources):
         adapter = ADAPTERS[source]()
         if not adapter.enabled or not retailer.collection_enabled or retailer.status != "enabled":
             raise ValidationError(f"{retailer.name}: collection switches and validated source status must be enabled first.")
+        retailers[source] = retailer
+    return retailers
+
+
+def validate_refresh(sources):
+    retailers = validate_sources(sources)
+    collector = ScrapeCommand()
+    for source, retailer in retailers.items():
+        adapter = ADAPTERS[source]()
         try:
             targets = collector.get_targets(retailer, {"url": [], "batch": None, "refresh_existing": True, "stale_only": True})
             for url in targets:
@@ -73,6 +87,16 @@ def validate_refresh(sources):
                     raise ValidationError(f"{retailer.name}: a stale listing URL is outside the reviewed catalog; inspect it first.")
         except (CommandError, CollectionError) as exc:
             raise ValidationError(f"{retailer.name}: {exc}") from None
+
+
+def validate_import(batch_key, targets=None):
+    batch, urls = get_import_batch(batch_key)
+    validate_sources([batch["retailer"]])
+    if targets is not None and (not isinstance(targets, list) or len(targets) > 10
+                               or any(not isinstance(url, str) or url not in urls for url in targets)
+                               or len(set(targets)) != len(targets)):
+        raise ValidationError("Import targets must be a unique subset of the selected saved batch.")
+    return batch
 
 
 def launch_refresh(job_id):
@@ -118,6 +142,9 @@ def run_refresh(job_id):
     command = RefreshCommand(stdout=StringIO(), stderr=StringIO())
     command.retailer_slugs = tuple(job.sources)
     command.reviewed_only = True
+    if job.kind == "import":
+        command.batch_key = job.batch
+        command.import_urls = job.targets
 
     def progress(rows):
         AdminPriceRefresh.objects.filter(pk=job_id, status="running").update(results=rows, updated_at=timezone.now())
@@ -125,7 +152,12 @@ def run_refresh(job_id):
     command.progress_callback = progress
     status, error = "success", ""
     try:
-        validate_refresh(job.sources)
+        if job.kind == "import":
+            batch = validate_import(job.batch, job.targets)
+            if job.sources != [batch["retailer"]]:
+                raise ValidationError("Import source does not match its saved batch.")
+        else:
+            validate_refresh(job.sources)
         call_command(command, no_color=True)
     except ValidationError as exc:
         status, error = "failed", " ".join(exc.messages)
@@ -155,12 +187,13 @@ def refresh_progress(job):
     sources = []
     for saved in job.results:
         row = dict(saved)
-        row["outcome_label"] = OUTCOME_LABELS.get(row["outcome"], row["outcome"])
+        row["outcome_label"] = ("Skipped — batch already imported" if job.kind == "import" and row["outcome"] == "no_work"
+                                else OUTCOME_LABELS.get(row["outcome"], row["outcome"]))
         run = runs.get(row.get("run_id"))
         row["url_results"] = run.results if run else []
         if run:
             row.update(products_collected=run.products_collected, request_count=run.request_count, run_status=run.status)
-        row["finished_count"] = sum(result.get("status") in {"stored", "failed"} for result in row["url_results"])
+        row["finished_count"] = sum(result.get("status") in {"stored", "failed", "skipped_existing"} for result in row["url_results"])
         row["target_count"] = len(row["url_results"])
         sources.append(row)
     return {"id": job.pk, "status": job.status, "status_label": job.get_status_display(),

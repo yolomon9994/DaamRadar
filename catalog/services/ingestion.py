@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.text import slugify
 
@@ -13,7 +14,7 @@ from catalog.models import PriceHistory, Product, RetailerListing
 
 
 @transaction.atomic
-def ingest(retailer, item, *, is_demo=False, category=None, illustration=None):
+def ingest(retailer, item, *, is_demo=False, category=None, illustration=None, create_only=False):
     try:
         price = Decimal(str(item.price))
         if not price.is_finite() or price <= 0 or price.as_tuple().exponent < -2 or price >= Decimal("10000000000"):
@@ -29,6 +30,11 @@ def ingest(retailer, item, *, is_demo=False, category=None, illustration=None):
         raise ValidationError("Title and retailer product identifier are required.")
     if item.availability not in RetailerListing.Availability.values:
         raise ValidationError("Invalid availability.")
+    if create_only:
+        preserved = RetailerListing.objects.select_for_update().filter(retailer=retailer, is_demo=is_demo).filter(
+            Q(url=item.url) | Q(external_id=item.external_id)).first()
+        if preserved:
+            return preserved, False
     identity = identify(item.title, item.brand, item.gtin)
     existing = RetailerListing.objects.select_for_update().filter(retailer=retailer, external_id=item.external_id,
                  delivery_area=item.delivery_area, is_demo=is_demo).select_related("product").first()
@@ -50,10 +56,15 @@ def ingest(retailer, item, *, is_demo=False, category=None, illustration=None):
             gtin=identity.gtin, image=item.image, category=category, is_demo=is_demo,
             illustration=illustration or ("milk" if {"milk", "milkpak"} & set(identity.name.split()) else "basket"))
     checked_at = timezone.now()
-    listing, created = RetailerListing.objects.update_or_create(retailer=retailer, external_id=item.external_id,
+    save_listing = RetailerListing.objects.get_or_create if create_only else RetailerListing.objects.update_or_create
+    listing, created = save_listing(retailer=retailer, external_id=item.external_id,
         delivery_area=item.delivery_area, is_demo=is_demo, defaults={"product": product, "original_title": item.title,
         "url": item.url, "current_price": price, "currency": "PKR", "availability": item.availability, "last_checked": checked_at,
         # Current adapters have no verified location context. Evidence for an earlier check cannot carry forward.
         "delivery_area_key": "", "area_evidence_url": "", "area_verified_at": None})
+    if create_only and not created:
+        # A competing insert won the unique-key race. Undo any new canonical product.
+        transaction.set_rollback(True)
+        return listing, False
     PriceHistory.objects.create(listing=listing, price=price, checked_at=checked_at)
     return listing, created

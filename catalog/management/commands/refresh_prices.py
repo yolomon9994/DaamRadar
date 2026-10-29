@@ -14,6 +14,8 @@ class Command(BaseCommand):
     retailer_slugs = REVIEWED_RETAILERS
     progress_callback = None
     reviewed_only = False
+    batch_key = None
+    import_urls = None
 
     def publish_progress(self):
         if self.progress_callback:
@@ -36,6 +38,7 @@ class Command(BaseCommand):
                 self.stdout.write(f"\nRefreshing {row['retailer']} (stale existing listings only)")
                 collector = ScrapeCommand(stdout=self.stdout, stderr=self.stderr)
                 collector.reviewed_only = self.reviewed_only
+                collector.permitted_urls = self.import_urls
                 row["outcome"] = "running"
                 self.publish_progress()
 
@@ -46,7 +49,9 @@ class Command(BaseCommand):
 
                 collector.progress_callback = progress
                 try:
-                    call_command(collector, row["retailer"], refresh_existing=True, stale_only=True,
+                    targets = {"batch": self.batch_key, "missing_only": True} if self.batch_key else {
+                        "refresh_existing": True, "stale_only": True}
+                    call_command(collector, row["retailer"], **targets,
                                  dry_run=options["dry_run"], report_dir=options["report_dir"],
                                  no_color=options["no_color"], force_color=options["force_color"])
                 except CommandError as exc:

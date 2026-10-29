@@ -1,0 +1,24 @@
+{% extends 'admin/base_site.html' %}{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-health.css' %}">{% endblock %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">Home</a> &rsaquo; <a href="{% url 'admin:catalog_collection_health' %}">Collection health</a> &rsaquo; Import reviewed catalog</div>{% endblock %}
+{% block content %}<div class="collection-health">
+  <p>Choose a saved reviewed batch to preview missing retailer listings. Previewing does not fetch retailer pages, create records or change source settings.</p>
+  <form method="get" class="health-filter" action="{% url 'admin:catalog_import_preview' %}">{{ batch_form.as_p }}<button type="submit" class="button">Preview batch</button></form>
+  {% if import_errors %}<ul class="errorlist" role="alert">{% for error in import_errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+  {% if active_refresh %}<p>An import or refresh is already active. <a href="{% url 'admin:catalog_refresh_detail' active_refresh.pk %}">Open {{ active_refresh.get_kind_display|lower }} #{{ active_refresh.pk }}</a>.</p>{% endif %}
+  {% if plan %}
+    <h2>{{ plan.retailer.name|default:plan.source }} — {{ plan.batch_key }}</h2>
+    <p>Saved batch review: {{ plan.reviewed_at }}. These reviews are dated; source rules and markup are checked again by the normal collector.</p>
+    <dl class="health-totals"><div><dt>Missing — will import</dt><dd data-import-missing>{{ plan.missing_count }}</dd></div><div><dt>Existing — will skip</dt><dd data-import-existing>{{ plan.existing_count }}</dd></div></dl>
+    <div class="health-table-wrap" tabindex="0" aria-label="Reviewed import preview; scroll horizontally when needed"><table>
+      <thead><tr><th scope="col">Reviewed product</th><th scope="col">Source URL</th><th scope="col">Import plan</th></tr></thead><tbody>
+      {% for row in plan.rows %}<tr><th scope="row">{{ row.title }}</th><td class="health-error"><a href="{{ row.url }}" target="_blank" rel="noopener noreferrer nofollow">{{ row.url }}</a></td><td>{% if row.missing %}Missing — import{% else %}Existing — skip{% endif %}</td></tr>{% endfor %}
+    </tbody></table></div>
+    <p>Existing live records are identified by source URL or retailer product ID, regardless of stock, freshness or delivery area. They are left untouched. Demo records do not count as imported listings. Quantities and matches are checked during ingestion; this preview does not assert current stock or delivery availability.</p>
+    {% if setup_errors %}<h3>Collection setup needed</h3><ul class="errorlist">{% for error in setup_errors %}<li>{{ error }}</li>{% endfor %}</ul><p>Configure the selected source using <code>docs/collection-workflow.md</code>. This page does not enable it automatically.</p>{% endif %}
+    {% if not can_start_import %}<p>Starting requires “Can import reviewed catalog batches” in addition to collection-health access.</p>
+    {% elif not plan.missing_count %}<p><strong>All listings in this batch already exist. Nothing needs importing.</strong> Use manual refresh separately for stale observations.</p>
+    {% elif not setup_errors and not active_refresh %}<form method="post" action="{% url 'admin:catalog_import_start' %}">{% csrf_token %}{{ start_form.as_p }}<button type="submit" class="button" data-import-start>Import {{ plan.missing_count }} missing listing{{ plan.missing_count|pluralize }}</button></form><p>This starts one finite local worker for the missing URLs above. The preview expires after 15 minutes; if the plan changes, preview it again.</p>{% endif %}
+  {% endif %}
+  <p><a href="{% url 'admin:catalog_collection_health' %}">Back to collection health</a></p>
+</div>{% endblock %}

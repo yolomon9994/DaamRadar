@@ -1,9 +1,10 @@
 {% extends 'admin/base_site.html' %}{% load static %}
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-health.css' %}">{% endblock %}
 {% block extrahead %}{{ block.super }}<script src="{% static 'js/admin-refresh.js' %}" defer></script>{% endblock %}
-{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">Home</a> &rsaquo; <a href="{% url 'admin:catalog_collection_health' %}">Collection health</a> &rsaquo; Refresh #{{ job.pk }}</div>{% endblock %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">Home</a> &rsaquo; <a href="{% url 'admin:catalog_collection_health' %}">Collection health</a> &rsaquo; {{ job.get_kind_display }} #{{ job.pk }}</div>{% endblock %}
 {% block content %}<div class="collection-health" data-admin-refresh data-status-url="{% url 'admin:catalog_refresh_status' job.pk %}" data-active="{{ job.is_active|yesno:'true,false' }}" data-needs-attention="{{ progress.needs_attention|yesno:'true,false' }}">
   <p>Requested {{ job.created_at|date:'d M Y, H:i:s' }} PKT{% if job.requested_by %} by {{ job.requested_by.get_username }}{% endif %}. A separate local worker handles this request. Closing this page does not cancel it or start another refresh.</p>
+  {% if job.kind == 'import' %}<p><strong>Missing-only import:</strong> {{ job.batch }}. Only the previewed missing URLs are eligible; existing listings are skipped without price/history updates.</p>{% endif %}
   <p>Status: <strong data-refresh-status>{{ job.get_status_display }}</strong>{% if job.worker_pid %}. Worker PID: {{ job.worker_pid }}{% endif %}</p>
   <p data-refresh-error role="alert">{{ job.error }}</p>
   <p data-refresh-poll-note role="status" aria-live="polite">{% if job.is_active %}Progress updates after each completed URL. Robots checks, retailer delays and timeouts can take time.{% else %}This request has finished. Starting another requires an explicit action from collection health.{% endif %}</p>
@@ -18,7 +19,7 @@
       <td><span data-source-error class="health-error">{{ row.error }}</span><ul data-source-results>{% for result in row.url_results %}<li>{{ result.url }} — {{ result.status }}</li>{% endfor %}</ul></td>
     </tr>{% endfor %}</tbody>
   </table></div>
-  <p>Fresh/empty sources are skipped without requests or new collection runs. A failed source does not automatically retry. Stored observations from a partial run are retained. No new URLs are discovered and delivery areas remain unverified.</p>
+  <p>{% if job.kind == 'import' %}Listings already present when this worker runs are skipped. A fully imported batch makes no requests or new collection runs. The worker uses the approved preview, not newly missing URLs.{% else %}Fresh/empty sources are skipped without requests or new collection runs.{% endif %} A failed source does not automatically retry. Stored observations from a partial run are retained. No new URLs are discovered and delivery areas remain unverified.</p>
   <p>A request left queued/running must be inspected; age does not release its lock. If the worker has stopped unexpectedly, follow the recovery instructions in <code>docs/admin-refresh.md</code>.</p>
   <noscript><p>JavaScript is off. Use Refresh progress to read the latest stored state; it does not start collection.</p></noscript>
 </div>{% endblock %}

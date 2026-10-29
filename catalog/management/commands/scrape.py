@@ -17,6 +17,7 @@ from catalog.scraping.client import PoliteClient
 from catalog.scraping.reviewed import COLLECTION_CATEGORIES, REVIEWED_BY_SOURCE
 from catalog.scraping.types import CollectionError
 from catalog.services.ingestion import ingest
+from catalog.services.catalog_import import missing_import_urls
 
 logger = logging.getLogger("catalog")
 
@@ -28,6 +29,7 @@ class Command(BaseCommand):
     report_path = None
     progress_callback = None
     reviewed_only = False
+    permitted_urls = None
 
     def publish_progress(self, run):
         if self.progress_callback:
@@ -40,6 +42,7 @@ class Command(BaseCommand):
         targets.add_argument("--batch", choices=list(BATCHES), help="A saved reviewed URL batch.")
         targets.add_argument("--refresh-existing", action="store_true", help="Refresh this retailer's existing non-demo product URLs.")
         parser.add_argument("--stale-only", action="store_true", help="With --refresh-existing, select observations older than PRICE_STALE_HOURS.")
+        parser.add_argument("--missing-only", action="store_true", help="With --batch, import only missing non-demo listings; never refresh existing records.")
         parser.add_argument("--dry-run", action="store_true", help="Validate and list targets without network requests or database writes.")
         parser.add_argument("--report-dir", type=Path, help="Write a JSON report as scrape-<run-id>.json in this directory.")
 
@@ -48,6 +51,8 @@ class Command(BaseCommand):
             raise CommandError("Choose exactly one of --url, --batch, or --refresh-existing.")
         if options["stale_only"] and not options["refresh_existing"]:
             raise CommandError("--stale-only requires --refresh-existing.")
+        if options.get("missing_only") and not options["batch"]:
+            raise CommandError("--missing-only requires a saved --batch.")
         if options["batch"]:
             batch = BATCHES[options["batch"]]
             if batch["retailer"] != retailer.slug:
@@ -61,6 +66,10 @@ class Command(BaseCommand):
         else:
             urls = options["url"]
         urls = list(dict.fromkeys(urls))
+        if self.permitted_urls is not None:
+            urls = [url for url in urls if url in self.permitted_urls]
+        if options.get("missing_only"):
+            urls = missing_import_urls(retailer, urls)
         if len(urls) > 10:
             raise CommandError("At most 10 distinct URLs may be collected in one manual run; select a smaller batch.")
         return urls
@@ -145,6 +154,11 @@ class Command(BaseCommand):
             client = PoliteClient(retailer.website)
             for result in run.results:
                 current_result = result
+                if options.get("missing_only") and not missing_import_urls(retailer, [result["url"]]):
+                    result.update(status="skipped_existing")
+                    run.save(update_fields=["results"])
+                    self.publish_progress(run)
+                    continue
                 try:
                     item = adapter.collect(client, result["url"])
                 except CollectionError as exc:
@@ -157,8 +171,14 @@ class Command(BaseCommand):
                 if category_slug:
                     name, icon = COLLECTION_CATEGORIES[category_slug]
                     category, _ = Category.objects.get_or_create(slug=category_slug, defaults={"name": name, "icon": icon})
-                listing, _ = ingest(retailer, item, category=category,
-                                    illustration=profile["illustration"] if profile else None)
+                listing, created = ingest(retailer, item, category=category,
+                                    illustration=profile["illustration"] if profile else None,
+                                    create_only=options.get("missing_only", False))
+                if options.get("missing_only") and not created:
+                    result.update(status="skipped_existing", listing_id=listing.pk)
+                    run.save(update_fields=["results"])
+                    self.publish_progress(run)
+                    continue
                 run.products_collected += 1
                 result.update(status="stored", listing_id=listing.pk, price=str(listing.current_price), checked_at=listing.last_checked.isoformat())
                 count = getattr(client, "request_count", 0)

@@ -1,5 +1,7 @@
 # Manual collection workflow
 
+Initial batch collection is also available through [reviewed catalog import in admin](admin-catalog-import.md), with a read-only missing-listing preview and create-only imports. The terminal commands below remain available. Refreshing existing observations is a separate action in the [admin refresh flow](admin-refresh.md).
+
 This workflow searches no external sites on behalf of visitors and activates no scheduler. Jalal Sons and Cartpk are enabled locally; Cartpk is restricted to eight reviewed product URLs. The [pantry expansion](pantry-catalog.md) adds three non-dairy pairs alongside the original milk pairs. Use PowerShell from the project directory. The [five-product catalog](milk-catalog.md) documents exact pairs, dated prices and expanded batches.
 
 ## Refresh both reviewed sources
