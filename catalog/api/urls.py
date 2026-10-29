@@ -1,8 +1,9 @@
 from django.urls import path
-from .views import BasketEstimate, CategoryList, ListImportPreview, ListingHistory, ProductDetail, ProductList, RetailerList
+from .views import BasketEstimate, CategoryList, ListImportPreview, ListingHistory, ProductDetail, ProductList, RetailerList, WatchlistCheck
 
 urlpatterns = [path("products/", ProductList.as_view(), name="api-products"),
                path("basket/", BasketEstimate.as_view(), name="api-basket"),
+               path("watchlist/", WatchlistCheck.as_view(), name="api-watchlist"),
                path("shopping-list/preview/", ListImportPreview.as_view(), name="api-list-import-preview"),
                path("products/<slug:slug>/", ProductDetail.as_view(), name="api-product"),
                path("retailers/", RetailerList.as_view()), path("categories/", CategoryList.as_view()),

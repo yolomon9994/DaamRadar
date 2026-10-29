@@ -1,0 +1,14 @@
+<section id="watch-price" class="watch-control" data-watch-control data-source="{% if product.is_demo %}demo{% else %}live{% endif %}" data-slug="{{ product.slug }}" data-name="{{ product.canonical_name }}" data-size="{{ product.size_label }}" data-check-url="{% url 'api-watchlist' %}" hidden aria-labelledby="watch-price-title">
+  <h2 id="watch-price-title">Watch this pack's price</h2>
+  <p>Set a target in PKR for one {{ product.size_label }} pack. Check it here or on your <a href="{% url 'watchlist' %}?source={% if product.is_demo %}demo{% else %}live{% endif %}">watchlist</a> using stored observations.</p>
+  <form data-watch-form class="watch-form">
+    <label for="watch-target">Target pack price (PKR)<input id="watch-target" name="target" type="text" inputmode="decimal" maxlength="13" placeholder="e.g. 300.00" required data-watch-target aria-describedby="watch-target-help"></label>
+    <button type="submit" class="button-small" data-watch-save>Watch price</button>
+    <button type="button" class="list-action" data-watch-remove hidden>Remove target</button>
+  </form>
+  <p id="watch-target-help" class="muted">Use 0.01–9,999,999,999.99 with up to two decimal places. Targets stay in this browser. Results update when you open this page or check again.</p>
+  <button type="button" class="list-action" data-watch-refresh hidden>Check target again</button>
+  <p data-watch-message role="status" aria-live="polite"></p>
+  <div data-watch-result></div>
+</section>
+<noscript><p>Enable JavaScript to save a price target in this browser.</p></noscript>

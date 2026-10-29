@@ -11,6 +11,7 @@
   <script src="{% static 'js/app.js' %}" defer></script>
   <script src="{% static 'js/list-transfer.js' %}" defer></script>
   <script src="{% static 'js/shopping-list.js' %}" defer></script>
+  <script src="{% static 'js/watchlist.js' %}" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -19,7 +20,7 @@
   <header class="site-header"><nav class="container nav-inner" aria-label="Main navigation">
     <a class="brand" href="{% url 'home' %}" aria-label="DaamRadar home"><span class="brand-mark">◉<i></i></span>Daam<span>Radar</span><span class="brand-period">.</span></a>
     <div class="nav-links"><a href="{% url 'home' %}#explore">Explore groceries</a><a href="{% url 'home' %}#how-it-works">How it works</a><a href="{% url 'sources' %}">Our sources <span aria-hidden="true">↗</span></a></div>
-    <a class="shopping-nav" href="{% url 'shopping-list' %}{% if source %}?source={{ source }}{% endif %}">Shopping list <span data-list-total>0</span></a>
+    <div class="planning-nav"><a class="shopping-nav" href="{% url 'shopping-list' %}{% if source %}?source={{ source }}{% endif %}">Shopping list <span data-list-total>0</span></a><a class="shopping-nav" href="{% url 'watchlist' %}{% if source %}?source={{ source }}{% endif %}">Watchlist <span data-watch-total>0</span></a></div>
     <span class="country-tag"><span aria-hidden="true">☾</span> Pakistan <small>PKR</small></span>
   </nav></header>
   <main id="main">{% block content %}{% endblock %}</main>

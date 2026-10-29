@@ -11,6 +11,22 @@
 
 .shopping-nav {font-weight:600; white-space:nowrap;}
 .shopping-nav span {display:inline-block; border-radius:20px; padding:0 7px; background:var(--green-light);}
+.planning-nav {display:flex; align-items:center; flex-wrap:wrap; gap:16px; font-size:13px;}
+.watch-link {display:block; text-align:center; padding:4px 8px 16px; font-size:12px; font-weight:600; text-decoration:underline;}
+.watch-control,.watch-item {border:1px solid var(--border); border-radius:12px; padding:24px; margin:24px 0; background:var(--cream); min-width:0; overflow-wrap:anywhere;}
+.watch-control h2,.watch-item h2 {font-size:23px;}
+.watch-items {list-style:none; padding:0;}
+.watch-form {display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; margin:18px 0;}
+.watch-form label {display:flex; flex-direction:column; gap:7px; font-size:13px; font-weight:600; max-width:100%;}
+.watch-form input {padding:9px; border:1px solid var(--border); border-radius:6px; width:220px; max-width:100%; background:white;}
+.watch-form input[aria-invalid="true"] {border-color:#a43b24;}
+.watch-status {font-weight:700; padding:8px 12px; background:#f0eee5; border-radius:6px;}
+.watch-status[data-watch-status="target_met"] {background:var(--green-light); color:var(--green);}
+.watch-offers {padding-left:20px;}
+.watch-offers li {padding:12px 0; border-bottom:1px solid var(--border);}
+.watch-offers span {display:block; font-size:13px; margin-top:4px;}
+@media(max-width:1000px) {.planning-nav {font-size:12px; gap:12px;}}
+@media(max-width:700px) {.planning-nav {margin-left:auto;} .watch-control,.watch-item {padding:18px;}}
 .list-add-button {display:block; width:100%; border:1px solid var(--green); background:var(--green-light); color:var(--green); padding:9px 16px; border-radius:8px; margin:12px 0; font-weight:600;}
 .list-add-button[hidden] {display:none;}
 .detail-container > .list-add-button {width:auto;}

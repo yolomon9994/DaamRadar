@@ -11,8 +11,18 @@ from catalog.models import Category, Retailer, RetailerListing
 from catalog.services.basket import estimate_basket
 from catalog.services.catalog import decorate, get_product_queryset, search_catalog
 from catalog.services.list_transfer import resolve_list
+from catalog.services.watchlist import check_targets
 from .serializers import (BasketQuerySerializer, CategorySerializer, HistorySerializer,
-                          ListTransferSerializer, ProductSerializer, RetailerSerializer)
+                          ListTransferSerializer, ProductSerializer, RetailerSerializer, WatchlistQuerySerializer)
+
+
+@method_decorator(never_cache, name="dispatch")
+class WatchlistCheck(APIView):
+    def get(self, request):
+        query = WatchlistQuerySerializer(data={"source": request.query_params.get("source", "demo"),
+                                             "items": request.query_params.getlist("item")})
+        query.is_valid(raise_exception=True)
+        return Response(check_targets(query.validated_data["items"], query.validated_data["source"]))
 
 
 @method_decorator(never_cache, name="dispatch")

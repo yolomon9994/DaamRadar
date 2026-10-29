@@ -5,5 +5,6 @@
   <div class="offer-list">{% for offer in product.offers %}<div class="offer-row {% if offer.is_best %}best{% endif %}"><span class="retailer-dot dot-{{ offer.retailer.slug }}" aria-hidden="true">{{ offer.retailer.name|first }}</span><span class="offer-name">{{ offer.retailer.name }}{% if offer.is_best %}<small>{% if product.is_demo %}Sample low{% else %}Lowest{% endif %}</small>{% elif offer.availability != 'in_stock' %}<small>{{ offer.get_availability_display }}</small>{% elif offer.is_stale %}<small>Stale observation</small>{% endif %}</span><span class="offer-price"><strong>Rs. {{ offer.current_price|money }}</strong>{% include 'catalog/includes/unit_price.html' with value=offer.standard_unit_price only %}</span></div>{% endfor %}</div>
   <a class="compare-link" href="{% url 'product-detail' product.slug %}">Compare listings <span aria-hidden="true">→</span></a>
   {% include 'catalog/includes/add_to_list.html' %}
+  <a class="watch-link" data-watch-link data-watch-slug="{{ product.slug }}" data-watch-source="{% if product.is_demo %}demo{% else %}live{% endif %}" href="{% url 'product-detail' product.slug %}#watch-price">Watch price</a>
   </div>
 </article>

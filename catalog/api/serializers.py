@@ -28,6 +28,23 @@ class BasketQuerySerializer(serializers.Serializer):
         return result
 
 
+class WatchlistQuerySerializer(serializers.Serializer):
+    source = serializers.ChoiceField(choices=["demo", "live"], default="demo")
+    items = serializers.ListField(child=serializers.CharField(trim_whitespace=False), max_length=50, default=list)
+
+    def validate_items(self, values):
+        result, seen = [], set()
+        for value in values:
+            if not re.fullmatch(r"[-a-zA-Z0-9_]{1,280}:(?:0|[1-9][0-9]{0,9})(?:\.[0-9]{1,2})?", value):
+                raise serializers.ValidationError("Use product-slug:target-price, in PKR with at most two decimal places.")
+            slug, target = value.rsplit(":", 1)
+            if slug in seen or Decimal(target) < Decimal("0.01"):
+                raise serializers.ValidationError("Use each product once and a target from 0.01 to 9999999999.99.")
+            seen.add(slug)
+            result.append((slug, Decimal(target)))
+        return result
+
+
 class StrictDocumentSerializer(serializers.Serializer):
     def to_internal_value(self, data):
         if isinstance(data, dict) and set(data) - set(self.fields):

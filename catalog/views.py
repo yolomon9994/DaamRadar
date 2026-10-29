@@ -39,3 +39,7 @@ def sources(request):
 
 def shopping_list(request):
     return render(request, "catalog/shopping_list.html", {"source": select_source(request.GET)})
+
+
+def watchlist(request):
+    return render(request, "catalog/watchlist.html", {"source": select_source(request.GET)})

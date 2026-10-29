@@ -71,11 +71,14 @@ To back up or move an editable list, use **Back up or transfer your list → Dow
 
 Product cards, retailer listings and included basket items also show **Rs/L**, **Rs/kg** or **Rs/item** alongside the pack price. These rates use total pack contents, including multipacks; unknown sizes show **Unit price unavailable**. For example, the fictional demo's 250 ml milk at Rs. 85 is Rs. 340/L. See [calculation rules and API fields](docs/unit-pricing.md).
 
+To follow a regular purchase, select **Watch price** on its card or detail page, enter your target pack price in PKR, and save it. Open **Watchlist** in the header to check, edit or remove targets. Fresh, in-stock observations at or below the target show **Observed target met** with check times and delivery warnings. Targets stay in this browser, separately for Demo and Collected; checks use stored data when you open the watchlist/product or select **Check targets**. See [watchlist behavior and limits](docs/watchlist.md).
+
 ## Implemented
 
 - Responsive homepage, category navigation, search, comparison cards, detail tables, source transparency, and empty/error states.
 - Browser-saved shopping lists with pack quantities, separate demo/collected lists and read-only retailer basket estimates. Per-item exclusions and coverage keep incomplete subtotals separate from full estimates; no cheapest-basket claim is made. See [shopping lists](docs/shopping-list.md).
 - Standard-unit price labels (Rs/L, Rs/kg and Rs/item) on cards, detail listings, basket breakdowns and retailer print checklists. Decimal calculations include multipacks and preserve the original eligibility/area rules. See [unit pricing](docs/unit-pricing.md).
+- Browser-saved target-price watchlists with per-pack thresholds, explicit fresh/in-stock matches, observation timestamps, delivery caveats and separate Demo/Collected targets. Local checks expire old results and never trigger retailer collection. See [watchlists](docs/watchlist.md).
 - Retailer-selectable shopping checklists for browser printing/Save as PDF, with pack sizes, purchase checkboxes, check dates and exclusions. Items-only mode omits prices; printed totals retain the same basket safeguards.
 - Shopping-list JSON downloads and import previews with explicit merge/replace choices, conservative local identity matching, catalog separation and retained unpriced items. Imports never restore prices or modify the catalog.
 - Local database search with case-insensitive partial and fuzzy matches; compatible size filtering; category/retailer/brand filters; price sorting; pagination.
@@ -106,6 +109,7 @@ Product cards, retailer listings and included basket items also show **Rs/L**, *
 | `GET /api/retailers/` | Retailers, availability status, and access notes |
 | `GET /api/listings/<id>/history/` | Paginated newest-first price observations |
 | `GET /api/basket/?source=demo&item=<slug>:<quantity>` | Read-only retailer basket coverage and item-price estimates |
+| `GET /api/watchlist/?source=demo&item=<slug>:<target>` | Read-only target checks against fresh, in-stock observed pack prices |
 | `POST /api/shopping-list/preview/` | Read-only list-file validation and local product resolution; no list or catalog writes |
 | `GET /health/` | Database connectivity readiness; generic 200/503 response |
 
