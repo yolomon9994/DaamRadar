@@ -2,27 +2,58 @@
 
 A local-first Pakistani grocery discovery and listed-price comparison MVP, built with Python, Django 5.2 LTS, Django REST Framework, Django Templates, Bootstrap 5, and vanilla JavaScript.
 
-**Data status:** eight reviewed products have listed prices from both Jalal Sons and Cartpk: five milk products plus Dalda Sunflower Oil Pouch 1L, Dalda Canola Oil 4.5L and Shan Biryani Masala 50g. Including the single-source Everyday 180ml listing, the local catalog contains nine real products and seventeen real listings. Prices are dated observations, not real-time quotes or delivery guarantees. Delivery areas remain unverified, so no winning retailer or savings claim is shown. The 12 seeded products and 36 seeded listings remain fictional demo data. See the [pantry expansion and commands](docs/pantry-catalog.md), [milk catalog](docs/milk-catalog.md) and [collection runbook](docs/collection-workflow.md).
+**Run locally from GitHub.** A hosted website is optional and deployment work is deferred. You can clone this repository or download its ZIP, run it on `localhost`, and explore the complete application with clearly labeled demo data. Python 3.12 or 3.13 is required; no hosting account, PostgreSQL installation or retailer credentials are needed for the demo. Installing dependencies requires internet access; browsing the seeded demo does not fetch retailer websites.
+
+This is also a data science portfolio project: it combines public-data collection, cleaning, quantity normalization, product entity resolution, and observed-price history. See the [data science case study](docs/data-science-case-study.md) for implemented methods, evidence, limitations and the next analytical milestones.
+
+**Data status:** the author's local development catalog contains eight reviewed products with listed prices from both Jalal Sons and Cartpk: five milk products plus Dalda Sunflower Oil Pouch 1L, Dalda Canola Oil 4.5L and Shan Biryani Masala 50g. Including the single-source Everyday 180ml listing, that catalog has nine real products and seventeen real listings. **This development database is not included in a Git clone or ZIP.** Prices are dated observations, not real-time quotes or delivery guarantees. Delivery areas remain unverified, so no winning retailer or savings claim is shown. A fresh setup instead provides 12 seeded products and 36 seeded listings as fictional demo data. See the [pantry expansion and commands](docs/pantry-catalog.md), [milk catalog](docs/milk-catalog.md) and [collection runbook](docs/collection-workflow.md).
 
 The original eleven listings were refreshed on **23 October 2026** ([audit](docs/collection-workflow.md#end-to-end-stale-refresh-23-october-2026)). On **24 October**, six pantry listings were imported successfully without changing those earlier records, bringing real history to thirty-four observations. All seventeen listings were fresh at validation. Freshness changes with time; a new checkout must collect its own observations.
 
-## Run on Windows / PowerShell
+## Quick start: Windows / PowerShell
 
-Python 3.12 or 3.13 is recommended. The current workspace has a Python 3.13 virtual environment, installed dependencies, migrations applied, and demo data loaded.
+Install Python 3.12 or 3.13 first. With Git installed:
 
 ```powershell
-cd 'I:\Personal Projects\DaamRadar'
-# For a fresh checkout:
+git clone https://github.com/yolomon9994/DaamRadar.git
+cd DaamRadar
+```
+
+Alternatively, choose **Code → Download ZIP** on GitHub, extract it, and open a terminal in the extracted folder containing `manage.py`. Git is not needed for that option. From that folder:
+
+```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.lock.txt
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 .\.venv\Scripts\python.exe manage.py migrate
 .\.venv\Scripts\python.exe manage.py seed_demo
-# Start here if the workspace is already initialized:
 .\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
 ```
 
-Open **http://127.0.0.1:8000/**. No account is required. Virtual-environment activation is optional; using the executable directly avoids PowerShell execution-policy issues. Copy `.env.example` only if you do not already have a `.env` file.
+Open **http://127.0.0.1:8000/**. No account is required. Virtual-environment activation is optional; using the executable directly avoids PowerShell execution-policy issues. The first setup loads fictional examples and does not collect live prices. Stop the server with **Ctrl+C**.
+
+To start it again later, open a terminal in the same project folder and run only:
+
+```powershell
+.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
+```
+
+If `python` is not found on Windows, try `py -3.13 -m venv .venv` for the environment-creation step. Keep the server bound to `127.0.0.1` for local use. To choose another port, replace `8000` with `8001` in both the command and browser URL.
+
+## Quick start: macOS / Linux
+
+Clone or extract the repository, open its folder, and use an installed Python 3.12/3.13 executable:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.lock.txt
+test -e .env || cp .env.example .env
+.venv/bin/python manage.py migrate
+.venv/bin/python manage.py seed_demo
+.venv/bin/python manage.py runserver 127.0.0.1:8000
+```
+
+Open **http://127.0.0.1:8000/**. These instructions use the same SQLite/demo configuration; local runtime verification in the development workspace uses Windows/Python 3.13.
 
 Try `Olpers Milk 1L` in the collected catalog. The website and API default to collected records once any exist; a fresh database with only demo fixtures defaults to demo. Switch to **Demo catalog** for `nutela`, `Surf Excel`, or `National Ketchup 400g`. Select category, retailer, brand, or sorting and press **Apply**. Collected product details show real source links, schema availability, check time, and history. One source is labeled an observed price, with no winning-retailer badge. Demo links remain disabled. Real observations are stored in your ignored local database; a fresh checkout must collect its own observations.
 
@@ -185,8 +216,10 @@ docs/                     Architecture and dated source investigation
 
 `requirements.txt` declares supported ranges; `requirements.lock.txt` records the exact versions installed during this build.
 
-## Next implementation phase
+## Current focus and next implementation phase
 
-Eight real cross-retailer listed-price pairs are functional across dairy and pantry. The [24 October delivery investigation](docs/delivery-areas.md) found public delivery claims but no verified shared price/stock scope; comparison now requires explicit observation-level evidence. Next, establish a supported location-specific page/feed and assess sustained source reliability. Naheed needs its denied access resolved without identity switching. Establish appropriate broader reuse arrangements and a safe frequency before publishing a large dataset or scheduling collection.
+The current distribution target is a downloadable local application and reproducible data science portfolio. Hosting is deferred; the production tooling remains available for later use. Next, add a documented analysis export/EDA workflow and measure product-matching performance on independently labeled examples. These are planned analytical milestones, not completed accuracy or market findings; see the [case study](docs/data-science-case-study.md).
+
+Eight real cross-retailer listed-price pairs are functional across dairy and pantry in the author's development database. The [24 October delivery investigation](docs/delivery-areas.md) found public delivery claims but no verified shared price/stock scope; comparison requires explicit observation-level evidence. A supported location-specific page/feed and sustained source reliability remain future research. Naheed needs its denied access resolved without identity switching. Establish appropriate broader reuse arrangements and a safe frequency before publishing a large dataset or scheduling collection.
 
 Current limits: Cartpk's adapter is restricted to eight exact URLs; sustained reliability and delivery areas remain unverified; no final delivered-cost comparison is claimed. Cartpk closed a connection during the expanded batch; completed observations were retained and the unfinished URLs were handled separately. Olpers Mart is not enabled. There is no scheduler, checkout/delivery, or location selector. History charts show up to 120 recent observations per listing, with older records available through the paginated API; real histories are still sparse. Search scores at most 1,000 candidates; replace this bounded approach as data grows. Matching needs broader coverage and review tools. Price-history interactions, pantry cards and delivery information were checked in Chrome at desktop/mobile widths; other browser flows still need validation. The new hosted CI matrix remains to be verified after pushing; local database validation used Windows/Python 3.13.
