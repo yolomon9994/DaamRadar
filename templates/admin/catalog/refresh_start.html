@@ -1,0 +1,10 @@
+{% extends 'admin/base_site.html' %}
+{% block content %}
+<p><a href="{% url 'admin:catalog_collection_health' %}">Back to collection health</a></p>
+{% if active_refresh %}<p><a href="{% url 'admin:catalog_refresh_detail' active_refresh.pk %}">Open active refresh #{{ active_refresh.pk }}</a></p>{% endif %}
+<form method="post" action="{% url 'admin:catalog_refresh_start' %}">{% csrf_token %}
+  {{ refresh_form.as_p }}
+  <p>Only stale, already imported reviewed URLs are checked, up to ten per source. Source settings are not changed.</p>
+  <button type="submit" class="button">Start manual refresh</button>
+</form>
+{% endblock %}

@@ -11,6 +11,13 @@ REVIEWED_RETAILERS = ("jalal-sons", "cartpk")
 
 class Command(BaseCommand):
     help = "Manually refresh stale existing Jalal Sons and Cartpk listings, sequentially. No scheduling or discovery."
+    retailer_slugs = REVIEWED_RETAILERS
+    progress_callback = None
+    reviewed_only = False
+
+    def publish_progress(self):
+        if self.progress_callback:
+            self.progress_callback(self.results)
 
     def add_arguments(self, parser):
         parser.add_argument("--dry-run", action="store_true", help="List stale targets without requests or database writes.")
@@ -21,12 +28,23 @@ class Command(BaseCommand):
             raise CommandError("--report-dir cannot be used with --dry-run.")
         self.results = [{"retailer": slug, "outcome": "not_attempted", "run_id": None,
                          "run_status": None, "products_collected": 0, "request_count": 0,
-                         "report_path": None, "error": ""} for slug in REVIEWED_RETAILERS]
+                         "report_path": None, "error": ""} for slug in self.retailer_slugs]
+        self.publish_progress()
         interrupted = False
         try:
             for row in self.results:
                 self.stdout.write(f"\nRefreshing {row['retailer']} (stale existing listings only)")
                 collector = ScrapeCommand(stdout=self.stdout, stderr=self.stderr)
+                collector.reviewed_only = self.reviewed_only
+                row["outcome"] = "running"
+                self.publish_progress()
+
+                def progress(run):
+                    row.update(run_id=run.pk, run_status=run.status, products_collected=run.products_collected,
+                               request_count=run.request_count)
+                    self.publish_progress()
+
+                collector.progress_callback = progress
                 try:
                     call_command(collector, row["retailer"], refresh_existing=True, stale_only=True,
                                  dry_run=options["dry_run"], report_dir=options["report_dir"],
@@ -67,6 +85,7 @@ class Command(BaseCommand):
                         row["outcome"] = "dry_run"
                     else:
                         row["outcome"] = "no_work"
+                    self.publish_progress()
                 if interrupted:
                     break
         finally:

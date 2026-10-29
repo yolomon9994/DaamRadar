@@ -1,14 +1,24 @@
 from django.contrib import admin
 from django import forms
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
+from django.db import IntegrityError, transaction
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import path
 from django.utils.decorators import method_decorator
-from django.views.decorators.http import require_safe
+from django.views.decorators.http import require_POST, require_safe
 
-from .models import Category, PriceHistory, Product, Retailer, RetailerListing, ScrapeRun
+from .models import AdminPriceRefresh, Category, PriceHistory, Product, Retailer, RetailerListing, ScrapeRun
 from .services.collection_health import can_view_collection_health, collection_health
+from .services.admin_refresh import can_start_refresh, launch_refresh, refresh_progress, validate_refresh, validate_worker_database
+from .management.commands.refresh_prices import REVIEWED_RETAILERS
+
+
+class RefreshForm(forms.Form):
+    source = forms.ChoiceField(label="Sources to refresh", choices=[
+        ("both", "Jalal Sons, then Cartpk"), ("jalal-sons", "Jalal Sons only"), ("cartpk", "Cartpk only")])
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
@@ -61,7 +71,11 @@ class RetailerAdmin(admin.ModelAdmin):
 
     def get_urls(self):
         return [path("collection-health/", self.admin_site.admin_view(self.collection_health),
-                     name="catalog_collection_health")] + super().get_urls()
+                     name="catalog_collection_health"),
+                path("collection-refresh/start/", self.admin_site.admin_view(self.start_refresh), name="catalog_refresh_start"),
+                path("collection-refresh/<int:job_id>/", self.admin_site.admin_view(self.refresh_detail), name="catalog_refresh_detail"),
+                path("collection-refresh/<int:job_id>/status/", self.admin_site.admin_view(self.refresh_status), name="catalog_refresh_status"),
+                ] + super().get_urls()
 
     def changelist_view(self, request, extra_context=None):
         return super().changelist_view(request, {**(extra_context or {}),
@@ -79,8 +93,59 @@ class RetailerAdmin(admin.ModelAdmin):
         page = Paginator(health.pop("stale_listings"), 25).get_page(request.GET.get("page")) if valid else None
         context = {**self.admin_site.each_context(request), **health, "title": "Collection health",
                    "opts": self.model._meta, "filter_form": form, "page_obj": page,
+                   "can_start_refresh": can_start_refresh(request.user), "refresh_form": RefreshForm(),
+                   "active_refresh": AdminPriceRefresh.objects.filter(status__in=["queued", "running"]).first(),
+                   "recent_refreshes": AdminPriceRefresh.objects.order_by("-created_at", "-pk")[:10],
                    "retailer_slug": form.cleaned_data.get("retailer", ""), "valid_filter": valid}
         return TemplateResponse(request, "admin/catalog/collection_health.html", context, status=200 if valid else 400)
+
+    @method_decorator(require_POST)
+    def start_refresh(self, request):
+        if not can_start_refresh(request.user):
+            raise PermissionDenied
+        form = RefreshForm(request.POST)
+        active = None
+        status = 400
+        if form.is_valid():
+            selected = form.cleaned_data["source"]
+            sources = list(REVIEWED_RETAILERS) if selected == "both" else [selected]
+            try:
+                validate_worker_database()
+                validate_refresh(sources)
+                with transaction.atomic():
+                    job = AdminPriceRefresh.objects.create(requested_by=request.user, sources=sources, results=[
+                        {"retailer": source, "outcome": "not_attempted", "run_id": None, "run_status": None,
+                         "products_collected": 0, "request_count": 0, "error": ""} for source in sources])
+                    transaction.on_commit(lambda: launch_refresh(job.pk))
+                return redirect("admin:catalog_refresh_detail", job_id=job.pk)
+            except ValidationError as exc:
+                form.add_error(None, exc)
+            except IntegrityError:
+                active = AdminPriceRefresh.objects.filter(status__in=["queued", "running"]).first()
+                if active is None:
+                    raise
+                form.add_error(None, "Another admin refresh is already queued or running. Open its progress; no duplicate was started.")
+                status = 409
+        context = {**self.admin_site.each_context(request), "title": "Start price refresh", "opts": self.model._meta,
+                   "refresh_form": form, "active_refresh": active}
+        return TemplateResponse(request, "admin/catalog/refresh_start.html", context, status=status)
+
+    def get_refresh(self, request, job_id):
+        if not can_view_collection_health(request.user):
+            raise PermissionDenied
+        return get_object_or_404(AdminPriceRefresh, pk=job_id)
+
+    @method_decorator(require_safe)
+    def refresh_detail(self, request, job_id):
+        job = self.get_refresh(request, job_id)
+        return TemplateResponse(request, "admin/catalog/refresh_detail.html", {
+            **self.admin_site.each_context(request), "title": f"Price refresh #{job.pk}", "opts": self.model._meta,
+            "job": job, "progress": refresh_progress(job),
+        })
+
+    @method_decorator(require_safe)
+    def refresh_status(self, request, job_id):
+        return JsonResponse(refresh_progress(self.get_refresh(request, job_id)))
 
 
 admin.site.register([Category, PriceHistory])

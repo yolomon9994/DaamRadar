@@ -1,5 +1,7 @@
 # Refresh both reviewed retailers
 
+For an authenticated browser action with persistent progress, use [Manual price refresh in Django admin](admin-refresh.md). The terminal command below remains available; the admin worker delegates to the same stale-only collectors with a stricter saved-reviewed-URL restriction.
+
 Run from the project directory in PowerShell:
 
 ```powershell

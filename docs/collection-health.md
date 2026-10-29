@@ -1,6 +1,6 @@
 # Admin collection health
 
-Sign in to Django admin and choose **Collection health** in the header or on the retailer list. The direct route is `/admin/catalog/retailer/collection-health/`. Existing admin credentials apply; no new account, permission type, or database migration is introduced.
+Sign in to Django admin and choose **Collection health** in the header or on the retailer list. The direct route is `/admin/catalog/retailer/collection-health/`. Existing admin credentials apply. Diagnostic views remain read-only. An explicit **Start manual refresh** action is now available to authorized operators; see [manual admin refresh](admin-refresh.md) for its additional permission, migration, worker and recovery behavior.
 
 ## What the page shows
 
@@ -20,7 +20,7 @@ Both the listing and its product must have `is_demo=False`. Demo records and mis
 
 The standard admin authentication gate requires active staff. The page additionally requires view or change permission for **all four** models: retailer, retailer listing, product and scrape run. Superusers qualify normally. Read-only staff with those view permissions can use the dashboard. The header link follows the same permission combinations. Existing admin model pages retain their own permissions.
 
-This is a read-only GET/HEAD view with admin cache protection. POST is rejected. Opening/filtering/paginating the page does not fetch retailers, start jobs, change collection switches, refresh price timestamps, append history or clear running runs. An old running run requires the existing operator inspection procedure; age alone never declares it stopped. No scheduler or browser-triggered collection action is added.
+The diagnostics route is a read-only GET/HEAD view with admin cache protection; POST to that route is rejected. Opening/filtering/paginating it does not fetch retailers, start jobs, change collection switches, refresh price timestamps, append history or clear running runs. Its separate refresh form uses an authorized CSRF-protected POST to reserve a manual worker. An old running run requires operator inspection; age alone never declares it stopped. No scheduler is activated. See [admin refresh](admin-refresh.md).
 
 ## Implementation and validation
 

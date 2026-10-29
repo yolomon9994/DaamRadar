@@ -37,3 +37,8 @@ BATCHES = {
         ],
     },
 }
+
+
+def reviewed_urls(retailer_slug):
+    """Exact URLs in saved reviewed batches, including original single-source items."""
+    return frozenset(url for batch in BATCHES.values() if batch["retailer"] == retailer_slug for url in batch["urls"])

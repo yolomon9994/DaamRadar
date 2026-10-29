@@ -20,3 +20,5 @@
 .health-pagination { display:flex; flex-wrap:wrap; align-items:center; gap:20px; margin:18px 0; }
 .collection-health summary { cursor:pointer; margin-top:8px; }
 .collection-health a:focus-visible,.collection-health summary:focus-visible,.health-table-wrap:focus-visible { outline:2px solid var(--link-fg); outline-offset:3px; }
+.collection-health progress { max-width:160px; }
+[data-source-results] { padding-left:18px; max-width:380px; overflow-wrap:anywhere; }

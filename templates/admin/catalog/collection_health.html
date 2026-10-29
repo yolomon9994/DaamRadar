@@ -3,6 +3,13 @@
 {% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">Home</a> &rsaquo; <a href="{% url 'admin:catalog_retailer_changelist' %}">Retailers</a> &rsaquo; Collection health</div>{% endblock %}
 {% block content %}<div class="collection-health">
   <p>This page reads stored collection records. Opening it does not collect prices, change source settings, or start a refresh.</p>
+  <section aria-labelledby="manual-refresh-heading"><h2 id="manual-refresh-heading">Manual price refresh</h2>
+  {% if active_refresh %}<p>A refresh is queued or running. <a href="{% url 'admin:catalog_refresh_detail' active_refresh.pk %}">Open refresh #{{ active_refresh.pk }}</a>. Another admin refresh cannot start until it is finalized.</p>
+  {% elif can_start_refresh %}<form method="post" action="{% url 'admin:catalog_refresh_start' %}">{% csrf_token %}{{ refresh_form.as_p }}<button type="submit" class="button">Start manual refresh</button></form>
+  <p>Checks stale existing reviewed URLs only, up to ten per source. Collection switches and contact configuration must already be enabled. No URLs are discovered or source settings changed.</p>
+  {% else %}<p>Starting a refresh requires the “Can manually refresh reviewed prices” permission in addition to dashboard access.</p>{% endif %}
+  <details><summary>Recent admin refresh requests (all sources)</summary><ul>{% for job in recent_refreshes %}<li><a href="{% url 'admin:catalog_refresh_detail' job.pk %}">Refresh #{{ job.pk }} — {{ job.get_status_display }}</a> · {{ job.created_at|date:'d M Y, H:i:s' }} PKT</li>{% empty %}<li>No admin refresh requests yet.</li>{% endfor %}</ul></details>
+  </section>
   <form method="get" class="health-filter">{{ filter_form.retailer.errors }}{{ filter_form.retailer.label_tag }} {{ filter_form.retailer }} <button type="submit" class="button">Apply</button> <a href="{% url 'admin:catalog_collection_health' %}">Reset</a></form>
   {% if valid_filter %}
   <p>Snapshot: <time datetime="{{ as_of|date:'c' }}">{{ as_of|date:'d M Y, H:i:s' }} PKT</time>. Stale means checked before <time datetime="{{ cutoff|date:'c' }}">{{ cutoff|date:'d M Y, H:i:s' }} PKT</time> ({{ stale_hours }} hours). Fresh describes check age; stock and delivery-area eligibility are separate.</p>

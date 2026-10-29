@@ -12,7 +12,7 @@ from django.utils import timezone
 from catalog.models import Category, Retailer, RetailerListing, ScrapeRun
 from catalog.matching.normalization import identify
 from catalog.scraping.adapters import ADAPTERS
-from catalog.scraping.batches import BATCHES
+from catalog.scraping.batches import BATCHES, reviewed_urls
 from catalog.scraping.client import PoliteClient
 from catalog.scraping.reviewed import COLLECTION_CATEGORIES, REVIEWED_BY_SOURCE
 from catalog.scraping.types import CollectionError
@@ -26,6 +26,12 @@ class Command(BaseCommand):
     # Exact records owned by this invocation, also used by the sequential wrapper.
     scrape_run = None
     report_path = None
+    progress_callback = None
+    reviewed_only = False
+
+    def publish_progress(self, run):
+        if self.progress_callback:
+            self.progress_callback(run)
 
     def add_arguments(self, parser):
         parser.add_argument("retailer", choices=list(ADAPTERS))
@@ -87,6 +93,14 @@ class Command(BaseCommand):
             raise CommandError("Retailer is not configured. Run python manage.py seed_retailers first.") from None
         urls = self.get_targets(retailer, options)
         adapter = ADAPTERS[retailer.slug]()
+        if self.reviewed_only:
+            for url in urls:
+                try:
+                    adapter.validate_url(url)
+                except CollectionError as exc:
+                    raise CommandError(str(exc)) from None
+                if url not in reviewed_urls(retailer.slug):
+                    raise CommandError("Admin refresh supports only the saved reviewed product URLs.")
         if options["dry_run"]:
             if options["report_dir"]:
                 raise CommandError("--report-dir cannot be used with --dry-run.")
@@ -121,6 +135,7 @@ class Command(BaseCommand):
         failure = None
         current_result = None
         try:
+            self.publish_progress(run)
             if not adapter.enabled:
                 raise CollectionError(adapter.reason, code="source_unavailable")
             if not settings.SCRAPING_ENABLED or not retailer.collection_enabled or retailer.status != "enabled":
@@ -146,7 +161,10 @@ class Command(BaseCommand):
                                     illustration=profile["illustration"] if profile else None)
                 run.products_collected += 1
                 result.update(status="stored", listing_id=listing.pk, price=str(listing.current_price), checked_at=listing.last_checked.isoformat())
-                run.save(update_fields=["results", "products_collected"])
+                count = getattr(client, "request_count", 0)
+                run.request_count = count if isinstance(count, int) else 0
+                run.save(update_fields=["results", "products_collected", "request_count"])
+                self.publish_progress(run)
                 self.stdout.write(f"{listing.original_title} | PKR {listing.current_price:.2f} | {listing.availability} | {listing.url}")
             run.status = ScrapeRun.Status.SUCCESS
         except CollectionError as exc:
@@ -174,6 +192,7 @@ class Command(BaseCommand):
                 client.close()
             run.completed_at = timezone.now()
             run.save()
+            self.publish_progress(run)
         self.save_report(run, options["report_dir"])
         if failure:
             raise CommandError(f"Run #{run.pk} ({run.status}, {run.error_code}): {failure}")

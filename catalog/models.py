@@ -172,3 +172,38 @@ class ScrapeRun(models.Model):
     class Meta:
         ordering = ["-started_at"]
         constraints = [models.UniqueConstraint(fields=["retailer"], condition=models.Q(status="running"), name="one_running_scrape_per_retailer")]
+
+
+class AdminPriceRefresh(models.Model):
+    class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        RUNNING = "running", "Running"
+        SUCCESS = "success", "Completed"
+        PARTIAL = "partial", "Completed with errors"
+        FAILED = "failed", "Failed"
+        STOPPED = "stopped", "Stopped by operator"
+
+    singleton = models.PositiveSmallIntegerField(default=1, editable=False)
+    requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(default=timezone.now)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.QUEUED)
+    sources = models.JSONField(default=list)
+    results = models.JSONField(default=list)
+    error = models.TextField(blank=True)
+    worker_pid = models.PositiveIntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+        permissions = [("run_price_refresh", "Can manually refresh reviewed prices")]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(singleton=1), name="admin_refresh_singleton"),
+            models.UniqueConstraint(fields=["singleton"], condition=models.Q(status__in=["queued", "running"]),
+                                    name="one_active_admin_refresh"),
+        ]
+
+    @property
+    def is_active(self):
+        return self.status in {self.Status.QUEUED, self.Status.RUNNING}
