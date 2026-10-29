@@ -114,6 +114,8 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ListingSerializer(serializers.ModelSerializer):
+    check_time_is_future = serializers.BooleanField(read_only=True, default=False)
+    matches_offer_filters = serializers.BooleanField(read_only=True, allow_null=True, default=None)
     retailer = serializers.CharField(source="retailer.name")
     is_stale = serializers.BooleanField(read_only=True)
     is_best = serializers.BooleanField(read_only=True, default=False)
@@ -123,7 +125,7 @@ class ListingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RetailerListing
-        fields = ["id", "retailer", "original_title", "url", "current_price", "standard_unit_price", "price_change", "currency", "availability", "last_checked", "delivery_area", "delivery_area_key", "area_evidence_url", "area_verified_at", "area_is_verified", "is_demo", "is_stale", "is_best"]
+        fields = ["id", "retailer", "original_title", "url", "current_price", "standard_unit_price", "price_change", "currency", "availability", "last_checked", "delivery_area", "delivery_area_key", "area_evidence_url", "area_verified_at", "area_is_verified", "is_demo", "is_stale", "is_best", "matches_offer_filters", "check_time_is_future"]
 
 
 class ProductSerializer(serializers.ModelSerializer):

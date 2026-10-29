@@ -8,6 +8,7 @@ from rapidfuzz.fuzz import WRatio
 
 from catalog.matching.normalization import identify, normalize_text
 from catalog.models import Product, RetailerListing
+from catalog.search_filters import filters_active, offer_filters
 from catalog.services.unit_pricing import standard_unit_price
 
 SORTS = {"relevance": "Recommended", "price_asc": "Lowest price", "price_desc": "Highest price"}
@@ -19,12 +20,13 @@ def select_source(params):
     return "live" if RetailerListing.objects.filter(is_demo=False, product__is_demo=False).exists() else "demo"
 
 
-def decorate(product):
+def decorate(product, *, now=None):
     product.offers = list(product.listings.all())
     # A shared label or retailer-wide delivery claim does not verify a price's area.
-    cutoff = timezone.now() - timedelta(hours=settings.PRICE_STALE_HOURS)
+    as_of = now if now is not None else timezone.now()
+    cutoff = as_of - timedelta(hours=settings.PRICE_STALE_HOURS)
     eligible = [o for o in product.offers if o.is_demo == product.is_demo
-                and o.availability == "in_stock" and o.last_checked >= cutoff]
+                and o.availability == "in_stock" and cutoff <= o.last_checked <= as_of]
     verified = {o.id: o.area_is_verified for o in product.offers}
     areas = {o.delivery_area_key if verified[o.id] else o.delivery_area for o in eligible}
     product.has_mixed_areas = len(areas) > 1
@@ -43,17 +45,30 @@ def decorate(product):
     product.sort_price = product.best_price
     for offer in product.offers:
         offer.is_best = offer.id in product.best_ids
+        offer.check_time_is_future = offer.last_checked > as_of
         offer.standard_unit_price = standard_unit_price(product, offer.current_price)
     return product
 
 
-def search_catalog(params):
+def search_catalog(params, *, filters=None, now=None):
+    filters = offer_filters(params) if filters is None else filters
+    as_of = now if now is not None else timezone.now()
+    cutoff = as_of - timedelta(hours=settings.PRICE_STALE_HOURS)
     query = params.get("q", "").strip()[:150]
     source = select_source(params)
     offers = RetailerListing.objects.filter(is_demo=source == "demo").select_related("retailer").order_by("current_price", "retailer__name")
     if params.get("retailer"):
         offers = offers.filter(retailer__slug=params["retailer"])
-    products = Product.objects.filter(is_demo=source == "demo", listings__in=offers).distinct().select_related("category")
+    matching_offers = offers
+    if filters["fresh"]:
+        matching_offers = matching_offers.filter(last_checked__gte=cutoff, last_checked__lte=as_of)
+    if filters["in_stock"]:
+        matching_offers = matching_offers.filter(availability="in_stock")
+    if filters["min_price"] is not None:
+        matching_offers = matching_offers.filter(current_price__gte=filters["min_price"])
+    if filters["max_price"] is not None:
+        matching_offers = matching_offers.filter(current_price__lte=filters["max_price"])
+    products = Product.objects.filter(is_demo=source == "demo", listings__in=matching_offers).distinct().select_related("category")
     if params.get("category"):
         products = products.filter(category__slug=params["category"])
     if params.get("brand"):
@@ -86,7 +101,17 @@ def search_catalog(params):
             continue
         if query_identity.variants and not query_identity.variants.issubset(identify(product.canonical_name).variants):
             continue
-        product = decorate(product)
+        if query_identity.packaging and query_identity.packaging != identify(product.canonical_name).packaging:
+            continue
+        product = decorate(product, now=as_of)
+        product.has_offer_filters = filters_active(filters)
+        for offer in product.offers:
+            offer.matches_offer_filters = (all((
+                not filters["fresh"] or cutoff <= offer.last_checked <= as_of,
+                not filters["in_stock"] or offer.availability == "in_stock",
+                filters["min_price"] is None or offer.current_price >= filters["min_price"],
+                filters["max_price"] is None or offer.current_price <= filters["max_price"],
+            )) if product.has_offer_filters else None)
         product.relevance = score
         found.append(product)
     sort = params.get("sort", "relevance")
@@ -95,6 +120,14 @@ def search_catalog(params):
     else:
         found.sort(key=lambda p: (-p.relevance, p.canonical_name))
     return found
+
+
+def search_suggestions(params):
+    filters = offer_filters(params)
+    if len(params.get("q", "").strip()) < 2:
+        return []
+    # Same bounded matching, identity/size guards and offer filters as full search.
+    return search_catalog({**{key: value for key, value in params.items()}, "sort": "relevance"}, filters=filters)[:6]
 
 
 def get_product_queryset():

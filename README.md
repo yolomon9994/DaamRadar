@@ -85,6 +85,7 @@ To follow a regular purchase, select **Watch price** on its card or detail page,
 - Retailer-selectable shopping checklists for browser printing/Save as PDF, with pack sizes, purchase checkboxes, check dates and exclusions. Items-only mode omits prices; printed totals retain the same basket safeguards.
 - Shopping-list JSON downloads and import previews with explicit merge/replace choices, conservative local identity matching, catalog separation and retained unpriced items. Imports never restore prices or modify the catalog.
 - Local database search with case-insensitive partial and fuzzy matches; compatible size filtering; category/retailer/brand filters; price sorting; pagination.
+- Local search suggestions with keyboard controls, fresh-check/in-stock filters, validated PKR pack-price ranges and scoped empty-result recovery. Offer conditions must match one listing; other offers remain visible for comparison context. See [search rules and API](docs/search.md).
 - Separate canonical products, categories, retailers, listings, observations, and scrape audit runs, with migrations and database constraints.
 - Normalized metric quantities, brand aliases, pack counts, variant and packaging guards, GTIN checks, RapidFuzz ranking, and conservative canonical linking.
 - Atomic listing upserts with a history observation for every check, even if the price is unchanged.

@@ -123,6 +123,17 @@ def main():
                           "Production API standard-unit prices")
                     check(all(offer["price_change"]["status"] == "no_previous" for offer in milk["listings"]),
                           "Single-observation demo prices do not invent changes")
+                    suggested = client.get(base + "/api/search-suggestions/?source=demo&q=Olpers+Milk+1L&fresh=1&in_stock=1&max_price=325", headers=headers, timeout=5)
+                    check(suggested.status_code == 200 and suggested.json()["source"] == "demo"
+                          and [row["slug"] for row in suggested.json()["results"]] == ["demo-olpers-milk-1l"]
+                          and "no-store" in suggested.headers.get("Cache-Control", ""), "Production local search suggestions respect offer filters")
+                    filtered = client.get(base + "/api/products/?source=demo&q=Olpers+Milk+1L&min_price=340", headers=headers, timeout=5)
+                    check(filtered.status_code == 200 and filtered.json()["count"] == 1
+                          and filtered.json()["results"][0]["best_price"] == "325.00"
+                          and len(filtered.json()["results"][0]["listings"]) == 3,
+                          "Production offer filters preserve full comparison context")
+                    invalid_filter = client.get(base + "/api/products/?source=demo&min_price=500&max_price=100", headers=headers, timeout=5)
+                    check(invalid_filter.status_code == 400, "Production rejects reversed pack-price ranges")
                     observed = client.get(base + f"/api/listings/{milk['listings'][0]['id']}/history/", headers=headers, timeout=5)
                     check(observed.status_code == 200 and all(row["context_status"] == "captured"
                           and row["is_demo"] is True and row["context"]["product"]["quantity"] == "1000.000"

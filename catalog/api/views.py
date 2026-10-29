@@ -6,10 +6,13 @@ from rest_framework.views import APIView
 from rest_framework.parsers import JSONParser
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
+from django.urls import reverse
+from rest_framework.exceptions import ValidationError
 
 from catalog.models import Category, Retailer, RetailerListing
 from catalog.services.basket import estimate_basket
-from catalog.services.catalog import decorate, get_product_queryset, search_catalog
+from catalog.services.catalog import decorate, get_product_queryset, search_catalog, search_suggestions, select_source
+from catalog.search_filters import InvalidOfferFilters
 from catalog.services.list_transfer import resolve_list
 from catalog.services.watchlist import check_targets
 from catalog.services.price_changes import attach_price_changes
@@ -59,12 +62,30 @@ class CatalogPagination(PageNumberPagination):
     max_page_size = 48
 
 
+@method_decorator(never_cache, name="dispatch")
+class SearchSuggestions(APIView):
+    def get(self, request):
+        params = request.query_params.dict()
+        params["source"] = select_source(params)
+        try:
+            products = search_suggestions(params)
+        except InvalidOfferFilters as exc:
+            raise ValidationError(exc.errors) from None
+        return Response({"source": params["source"], "results": [
+            {"name": p.canonical_name, "size": p.size_label, "slug": p.slug,
+             "url": reverse("product-detail", args=[p.slug])} for p in products]})
+
+
+@method_decorator(never_cache, name="dispatch")
 class ProductList(ListAPIView):
     serializer_class = ProductSerializer
     pagination_class = CatalogPagination
 
     def get_queryset(self):
-        return search_catalog(self.request.query_params)
+        try:
+            return search_catalog(self.request.query_params)
+        except InvalidOfferFilters as exc:
+            raise ValidationError(exc.errors) from None
 
     def get_serializer(self, *args, **kwargs):
         # Load history only for the serialized page, in one bounded query.
