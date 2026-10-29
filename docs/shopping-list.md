@@ -10,6 +10,18 @@ Lists are saved in this browser's local storage under `daamradar.shopping-list.v
 
 JavaScript is required for shopping-list controls. Product browsing and individual comparisons remain available without it. Page views and basket calculations never trigger retailer collection.
 
+## Print a checklist or save a PDF
+
+After estimates load, scroll to **Take your list with you**. Choose a retailer, or **Items only — no prices**, then select **Print / Save as PDF**. In the browser's print dialog, choose your printer or **Save as PDF**. The checklist uses an A4 portrait layout; printer settings can override the paper size. You can turn off the browser's own headers/footers in that dialog if desired.
+
+**Preview checklist** opens a screen preview. On a small screen, scroll the preview sideways to see the price columns; it also accepts keyboard focus for scrolling. Tick **Picked up** boxes in this preview or mark the printed boxes by hand. Browser marks last only on the current page, survive estimate refreshes/retailer changes for products still on the list, and never reduce quantities or totals. Reloading the page clears them; PDF output is a snapshot, not an interactive form.
+
+The printed page includes the selected catalog/retailer, exact pack sizes and quantities, all requested products, item eligibility, available check dates in Pakistan time (PKT), and the estimate-snapshot time. Missing, stale, unavailable and ambiguous offers stay on the checklist without contributing prices. The most recent observation date is shown for an excluded item when available; it does not make that observation eligible. Incomplete coverage or conflicting areas withhold the full estimate and label any covered-items subtotal separately. Demo, unverified-area and delivery/checkout-charge caveats remain on paper.
+
+Only the selected retailer's estimate is printed. Items-only mode omits price columns and totals. Browser navigation, list-editing controls, other retailer cards and the site footer are hidden. Long checklists paginate with repeated table headings. Both the button and **Ctrl+P** use the same selection, even when the preview is collapsed. Empty lists, invalid quantities and pending/failed estimate requests clear the printable snapshot; printing then shows an explanation instead of an old total. Prices are the dated snapshot shown, not a fresh collection performed when printing.
+
+Printing uses the browser and creates no server-side PDF, new dependency or retailer request. Sharing a saved PDF does not share or synchronize the editable browser list.
+
 ## Estimate rules
 
 - Quantities multiply the exact observed unit price using Python `Decimal`; the API returns two-decimal PKR strings.
@@ -28,7 +40,7 @@ Estimates are reloaded on opening the list, changing quantities, removing items,
 GET /api/basket/?source=demo&item=demo-olpers-milk-1l:2&item=demo-nutella-350g:1
 ```
 
-`source` is `demo` (default) or `live`. Repeat `item=product-slug:quantity` for each product. Duplicate slugs, malformed values, quantities outside 1–99, more than 50 entries and unknown sources return HTTP 400. An empty list returns empty items/retailers. Wrong-source or deleted slugs are unavailable items, not substitutes. The response includes the selected items and retailer estimates with `covered_count`, `item_count`, `subtotal`, nullable `total`, `is_complete`, area flags and per-item exclusion statuses. Responses use `Cache-Control: no-store`; the normal anonymous API throttle applies. POST is not supported. This endpoint calculates estimates without persisting the list or changing price history.
+`source` is `demo` (default) or `live`. Repeat `item=product-slug:quantity` for each product. Duplicate slugs, malformed values, quantities outside 1–99, more than 50 entries and unknown sources return HTTP 400. An empty list returns empty items/retailers. Wrong-source or deleted slugs are unavailable items, not substitutes. The response includes the selected items (including `size`) and retailer estimates with `covered_count`, `item_count`, `subtotal`, nullable `total`, `is_complete`, area flags and per-item exclusion statuses. Lines include `last_checked` for the included offer and `last_observed_at` for the most recent candidate observation, even when excluded. These dates can differ when newer observations are ineligible. Responses use `Cache-Control: no-store`; the normal anonymous API throttle applies. POST is not supported. This endpoint calculates estimates without persisting the list or changing price history.
 
 ## Validation, 29 October 2026
 
@@ -37,3 +49,5 @@ All 181 automated tests passed on SQLite under Windows/Python 3.13, including 13
 Eighteen Chrome checks against a disposable local Django server covered additions from cards/details, repeated-add quantities, recalculation, persistence across navigation, removal, clearing only one catalog, cross-tab storage updates, deleted products, corrupt/blocked storage and failed estimate requests. Layouts were checked at 1280px and 390px. These checks used fictional demo data and temporary QA observations; the development database and `.env` were unchanged.
 
 The production HTTP smoke check also passed using a separate SQLite database: Waitress served the shopping-list page and basket API, and WhiteNoise served the new hashed JavaScript asset. Django checks and the migration-drift check passed; no database migration is required.
+
+The print milestone retained all 181 passing SQLite tests, extending basket assertions for pack sizes and excluded-observation timestamps. Twenty-one additional Chrome print checks passed, including retailer selection, quantities/totals, purchase marks, items-only output, invalid/error/empty states, and a 50-item checklist. Actual browser-generated PDFs included a one-page two-item checklist and a five-page 50-item checklist; print controls/preview were checked at 1280px and 390px. Generated QA PDFs and screenshots remain ignored local artifacts, not new project dependencies or public data exports.

@@ -36,12 +36,15 @@ class BasketTests(TestCase):
         return next(row for row in result["retailers"] if row["slug"] == slug)
 
     def test_decimal_quantity_totals_and_unverified_estimate(self):
-        row = self.row(self.estimate())
+        result = self.estimate()
+        row = self.row(result)
         self.assertEqual(row["total"], "4.80")
         self.assertEqual(row["lines"][0]["line_total"], "0.30")
         self.assertTrue(row["is_complete"])
         self.assertTrue(row["has_unverified_areas"])
         self.assertEqual(row["lines"][0]["last_checked"], self.checked.isoformat())
+        self.assertEqual(row["lines"][0]["last_observed_at"], self.checked.isoformat())
+        self.assertEqual(result["items"][0]["size"], "Size unspecified")
 
     def test_partial_coverage_has_subtotal_but_no_full_total(self):
         result = self.estimate()
@@ -66,6 +69,9 @@ class BasketTests(TestCase):
                 RetailerListing.objects.filter(pk=self.milk_offer.pk).update(**fields)
                 row = self.row(self.estimate())
                 self.assertEqual(row["lines"][0]["status"], status)
+                expected = fields.get("last_checked", self.checked).isoformat()
+                self.assertEqual(row["lines"][0]["last_observed_at"], expected)
+                self.assertIsNone(row["lines"][0]["last_checked"])
                 self.assertEqual(row["subtotal"], "4.50")
                 self.assertIsNone(row["total"])
 
@@ -79,6 +85,8 @@ class BasketTests(TestCase):
     def test_demo_live_and_missing_products_remain_separate(self):
         data = estimate_basket([("demo-olpers-milk-1l", 1), ("real-milk", 1), ("deleted-product", 1)], "demo")
         self.assertEqual([item["available"] for item in data["items"]], [True, False, False])
+        self.assertEqual(data["items"][0]["size"], "1 L")
+        self.assertEqual(data["items"][2]["size"], "Size unavailable")
         for row in data["retailers"]:
             self.assertIsNone(row["total"])
             self.assertEqual(row["covered_count"], 1)

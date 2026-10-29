@@ -2043,3 +2043,170 @@ h3 {
     transform:translateX(-50%)!important;
   }
 }
+
+.shopping-print {
+  margin-top:40px;
+  padding-top:30px;
+  border-top:1px solid var(--border);
+}
+.print-controls label {
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  font-weight:600;
+}
+.print-controls select {
+  max-width:100%;
+  padding:10px;
+  border:1px solid var(--border);
+  border-radius:6px;
+  background:white;
+}
+.print-sheet {
+  padding:24px;
+  border:1px solid var(--border);
+  overflow-x:auto;
+  background:white;
+  color:#18251f;
+}
+.print-sheet h2 {
+  font-size:28px;
+}
+.print-sheet h3 {
+  font-size:22px;
+}
+.print-catalog {
+  font-weight:700;
+}
+.print-checklist {
+  width:100%;
+  min-width:650px;
+  border-collapse:collapse;
+  font-size:13px;
+  margin:20px 0;
+}
+.print-checklist th,.print-checklist td {
+  padding:10px 8px;
+  text-align:left;
+  vertical-align:top;
+  border:1px solid #a8b0aa;
+  overflow-wrap:anywhere;
+}
+.print-checklist small {
+  display:block;
+  font-size:11px;
+  font-weight:400;
+  margin-top:5px;
+}
+.print-purchase-check input {
+  width:20px;
+  height:20px;
+}
+.print-checkbox,.print-only {
+  display:none;
+}
+.print-estimate-summary {
+  font-size:13px;
+}
+
+@page shopping-checklist {
+  size:A4 portrait;
+  margin:12mm;
+}
+@media print {
+  body.shopping-list-page {
+    page:shopping-checklist;
+    background:white;
+    color:black;
+    font-size:10pt;
+    line-height:1.35;
+  }
+  body.shopping-list-page > :not(main),
+  .shopping-list-page .shopping-container > :not([data-list-print]):not([data-print-unavailable]),
+  .shopping-list-page .print-controls {
+    display:none!important;
+  }
+  .shopping-list-page .shopping-container {
+    width:100%;
+    max-width:none;
+    padding:0;
+    margin:0;
+    min-height:0;
+  }
+  .shopping-list-page .shopping-print {
+    border:0;
+    margin:0;
+    padding:0;
+  }
+  .shopping-list-page [data-print-sheet][hidden] {
+    display:block!important;
+  }
+  .shopping-list-page .print-only:not([hidden]) {
+    display:block;
+  }
+  .shopping-list-page .print-sheet {
+    padding:0;
+    border:0;
+    overflow:visible;
+    color:black;
+  }
+  .shopping-list-page .print-sheet h2,
+  .shopping-list-page .print-sheet h3 {
+    letter-spacing:normal;
+    break-after:avoid;
+  }
+  .shopping-list-page .print-sheet h2 {
+    font-size:19pt;
+  }
+  .shopping-list-page .print-sheet h3 {
+    font-size:14pt;
+  }
+  .shopping-list-page .print-checklist {
+    min-width:0;
+    table-layout:fixed;
+    font-size:9pt;
+  }
+  .shopping-list-page .print-checklist th,
+  .shopping-list-page .print-checklist td {
+    padding:2mm;
+    border-color:#444;
+  }
+  .shopping-list-page .print-checklist th:first-child {
+    width:12%;
+  }
+  .shopping-list-page .print-checklist th:nth-child(2) {
+    width:24%;
+  }
+  .shopping-list-page .print-checklist th:nth-child(3) {
+    width:8%;
+  }
+  .shopping-list-page .print-checklist small {
+    font-size:8pt;
+  }
+  .shopping-list-page .print-checklist thead {
+    display:table-header-group;
+  }
+  .shopping-list-page .print-checklist tr,
+  .shopping-list-page .print-estimate-summary {
+    break-inside:avoid;
+  }
+  .shopping-list-page .print-purchase-check input {
+    display:none;
+  }
+  .shopping-list-page .print-checkbox {
+    display:inline-block;
+    width:4mm;
+    height:4mm;
+    border:1pt solid black;
+    line-height:3mm;
+    text-align:center;
+  }
+  .shopping-list-page .print-purchase-check input:checked + .print-checkbox::after {
+    content:"✓";
+    color:black;
+    font-size:12pt;
+  }
+  .shopping-list-page .print-estimate-summary {
+    font-size:9pt;
+  }
+}

@@ -28,6 +28,7 @@ def estimate_basket(items, source):
         "source": source, "currency": "PKR", "estimated_at": checked_at.isoformat(),
         "items": [{"slug": slug, "quantity": quantity,
                    "name": products[slug].canonical_name if slug in products else "Product unavailable in this catalog",
+                   "size": products[slug].size_label if slug in products else "Size unavailable",
                    "available": slug in products} for slug, quantity in items],
         "retailers": [],
     }
@@ -70,6 +71,7 @@ def estimate_basket(items, source):
                           "unit_price": money(chosen.current_price) if chosen else None,
                           "line_total": money(line_total),
                           "last_checked": chosen.last_checked.isoformat() if chosen else None,
+                          "last_observed_at": max(o.last_checked for o in candidates).isoformat() if candidates else None,
                           "delivery_area": chosen.delivery_area if chosen else "",
                           "area_is_verified": chosen.area_is_verified if chosen else False})
         covered = sum(line["status"] == "included" for line in lines)

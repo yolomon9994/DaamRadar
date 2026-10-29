@@ -24,5 +24,20 @@
     <p>Each subtotal covers only the included items. A full estimate requires every item and consistent delivery-area information. Stock and quantities are observations, not a reservation.</p>
     <div class="basket-grid" data-list-estimates></div>
   </div>
+  <section class="shopping-print" data-list-print hidden aria-labelledby="print-list-title">
+    <div class="print-controls">
+      <h2 id="print-list-title">Take your list with you</h2>
+      <p>Print a checklist or choose <strong>Save as PDF</strong> in your browser's print dialog. Purchase checkboxes are temporary and do not change quantities or estimates.</p>
+      <div class="list-toolbar">
+        <label for="print-retailer">Retailer for your checklist
+          <select id="print-retailer" data-print-retailer><option value="">Items only — no prices</option></select>
+        </label>
+        <button type="button" class="primary-button" data-list-print-button>Print / Save as PDF</button>
+        <button type="button" class="list-action" data-print-preview-toggle aria-expanded="false" aria-controls="shopping-print-sheet">Preview checklist</button>
+      </div>
+    </div>
+    <div id="shopping-print-sheet" class="print-sheet" data-print-sheet role="region" aria-label="Shopping checklist preview; scroll sideways on small screens" tabindex="0" hidden></div>
+  </section>
+  <p class="print-only" data-print-unavailable>Add products and load valid estimates before printing a shopping checklist.</p>
 </div>
 {% endblock %}

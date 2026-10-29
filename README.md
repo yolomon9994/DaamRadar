@@ -65,10 +65,13 @@ Select **Add to list** on product cards or detail pages, then open **Shopping li
 
 Demo and collected lists stay separate and are saved in the same browser without an account. JavaScript and browser storage enable persistence; the page warns if storage is unavailable. No live collection runs when using the list. See [shopping-list behavior, API and checks](docs/shopping-list.md).
 
+To take a checklist to the store, open **Take your list with you**, select a retailer (or items only), and choose **Print / Save as PDF**. The print view includes pack sizes, quantities, purchase checkboxes, dated observations and any exclusion/area warnings. Choose **Save as PDF** in the browser's print dialog to keep a copy on your phone. See [printing instructions](docs/shopping-list.md#print-a-checklist-or-save-a-pdf).
+
 ## Implemented
 
 - Responsive homepage, category navigation, search, comparison cards, detail tables, source transparency, and empty/error states.
 - Browser-saved shopping lists with pack quantities, separate demo/collected lists and read-only retailer basket estimates. Per-item exclusions and coverage keep incomplete subtotals separate from full estimates; no cheapest-basket claim is made. See [shopping lists](docs/shopping-list.md).
+- Retailer-selectable shopping checklists for browser printing/Save as PDF, with pack sizes, purchase checkboxes, check dates and exclusions. Items-only mode omits prices; printed totals retain the same basket safeguards.
 - Local database search with case-insensitive partial and fuzzy matches; compatible size filtering; category/retailer/brand filters; price sorting; pagination.
 - Separate canonical products, categories, retailers, listings, observations, and scrape audit runs, with migrations and database constraints.
 - Normalized metric quantities, brand aliases, pack counts, variant and packaging guards, GTIN checks, RapidFuzz ranking, and conservative canonical linking.

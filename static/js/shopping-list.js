@@ -102,6 +102,15 @@
   const message = page.querySelector("[data-list-message]");
   const estimates = page.querySelector("[data-list-estimates]");
   const refreshButton = page.querySelector("[data-list-refresh]");
+  const printSection = page.querySelector("[data-list-print]");
+  const printSheet = page.querySelector("[data-print-sheet]");
+  const printUnavailable = page.querySelector("[data-print-unavailable]");
+  const printRetailerSelect = page.querySelector("[data-print-retailer]");
+  const previewToggle = page.querySelector("[data-print-preview-toggle]");
+  const pickedUp = new Set();
+  let printData = null;
+  let printRetailer = null;
+  document.body.classList.add("shopping-list-page");
   const statusLabels = {
     included: "Included", missing: "Not listed by this retailer", product_unavailable: "Product removed or unavailable in this catalog",
     stale: "Stale observation — excluded", availability_unknown: "Stock unknown — excluded",
@@ -114,6 +123,118 @@
     if (className) node.className = className;
     return node;
   }
+  const printTime = (value) => new Intl.DateTimeFormat("en-PK", {
+    dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Karachi",
+  }).format(new Date(value)) + " PKT";
+
+  function invalidatePrint(reason) {
+    printData = null;
+    printSection.hidden = true;
+    printSheet.replaceChildren();
+    printUnavailable.hidden = false;
+    printUnavailable.textContent = reason;
+  }
+
+  function renderPrintSheet() {
+    printSheet.replaceChildren();
+    if (!printData) return;
+    const retailer = printData.retailers.find((row) => row.slug === printRetailer);
+    const title = element("h2", "DaamRadar · Shopping checklist");
+    const catalog = source === "demo" ? "DEMO — fictional sample prices" : "Collected catalog — observed item prices";
+    printSheet.append(title, element("p", catalog, "print-catalog"));
+    printSheet.append(element("h3", retailer ? retailer.name : "Items only — no retailer selected"));
+    printSheet.append(element("p", "Estimate snapshot: " + printTime(printData.estimated_at) + ". All check times below are in Pakistan time (PKT)."));
+    const table = element("table", undefined, "print-checklist");
+    const head = table.createTHead().insertRow();
+    const headings = ["Picked up", "Product / pack size", "Packs", "Status / last observation"];
+    if (retailer) headings.push("Each (PKR)", "Line (PKR)");
+    headings.forEach((text) => {
+      const cell = element("th", text);
+      cell.scope = "col";
+      head.append(cell);
+    });
+    const body = table.createTBody();
+    const lines = new Map(retailer ? retailer.lines.map((line) => [line.slug, line]) : []);
+    printData.items.forEach((item) => {
+      const row = body.insertRow();
+      const check = document.createElement("input");
+      check.type = "checkbox";
+      check.checked = pickedUp.has(item.slug);
+      check.setAttribute("aria-label", "Picked up " + item.name);
+      check.addEventListener("change", () => {
+        if (check.checked) pickedUp.add(item.slug);
+        else pickedUp.delete(item.slug);
+      });
+      const label = element("label", undefined, "print-purchase-check");
+      const box = element("span", undefined, "print-checkbox");
+      box.setAttribute("aria-hidden", "true");
+      label.append(check, box);
+      row.insertCell().append(label);
+      const name = element("th", item.name);
+      name.scope = "row";
+      name.append(element("small", item.size || "Size unspecified"));
+      row.append(name);
+      row.insertCell().textContent = item.quantity;
+      const line = lines.get(item.slug);
+      const status = row.insertCell();
+      status.append(element("span", line ? (statusLabels[line.status] || line.status) :
+        item.available ? "Not priced — items-only checklist" : "Product unavailable in this catalog"));
+      const checkedAt = line && (line.last_checked || line.last_observed_at);
+      status.append(element("small", checkedAt ? "Checked " + printTime(checkedAt) : "No price-check date available"));
+      if (line && line.delivery_area) status.append(element("small", line.delivery_area));
+      if (retailer) {
+        row.insertCell().textContent = line && line.unit_price !== null ? money(line.unit_price) : "Excluded";
+        row.insertCell().textContent = line && line.line_total !== null ? money(line.line_total) : "Excluded";
+      }
+    });
+    printSheet.append(table);
+    const summary = element("div", undefined, "print-estimate-summary");
+    if (retailer) {
+      summary.append(element("p", `${retailer.covered_count} of ${retailer.item_count} products included in the estimate.`));
+      summary.append(element("strong", retailer.total !== null ?
+        (source === "demo" ? "Full sample estimate: " : "Full observed item-price estimate: ") + money(retailer.total) : "Full estimate unavailable"));
+      if (retailer.total === null) summary.append(element("p", retailer.subtotal !== null ?
+        "Covered-items subtotal only: " + money(retailer.subtotal) : "No eligible prices to subtotal."));
+      if (retailer.has_unverified_areas) summary.append(element("p", "Delivery areas unverified. Confirm these items can be ordered together."));
+      if (retailer.has_mixed_areas) summary.append(element("p", "Delivery-area information conflicts; a full basket estimate is withheld."));
+    } else {
+      summary.append(element("p", "Items-only checklist: no retailer prices or basket total are shown."));
+    }
+    summary.append(element("p", "Quantities count packs of the exact size shown. Missing, stale, unavailable or ambiguous offers are excluded from estimates, but stay on this checklist."));
+    summary.append(element("p", source === "demo" ? "Fictional demo data — not current retailer quotes." :
+      "Dated observations, not a current quote or stock reservation. Confirm prices, stock and delivery area with the retailer."));
+    summary.append(element("p", "Delivery fees and checkout charges are excluded. Checkboxes do not change the estimate."));
+    printSheet.append(summary);
+  }
+
+  function preparePrint(data) {
+    printData = data;
+    const slugs = new Set(data.items.map((item) => item.slug));
+    for (const slug of pickedUp) if (!slugs.has(slug)) pickedUp.delete(slug);
+    if (printRetailer === null) printRetailer = data.retailers[0]?.slug || "";
+    if (printRetailer && !data.retailers.some((row) => row.slug === printRetailer)) printRetailer = "";
+    printRetailerSelect.replaceChildren(new Option("Items only — no prices", ""));
+    data.retailers.forEach((retailer) => printRetailerSelect.add(new Option(retailer.name, retailer.slug)));
+    printRetailerSelect.value = printRetailer;
+    renderPrintSheet();
+    printSection.hidden = false;
+    printUnavailable.hidden = true;
+  }
+
+  printRetailerSelect.addEventListener("change", () => {
+    printRetailer = printRetailerSelect.value;
+    renderPrintSheet();
+  });
+  previewToggle.addEventListener("click", () => {
+    printSheet.hidden = !printSheet.hidden;
+    previewToggle.setAttribute("aria-expanded", String(!printSheet.hidden));
+    previewToggle.textContent = printSheet.hidden ? "Preview checklist" : "Hide checklist preview";
+  });
+  page.querySelector("[data-list-print-button]").addEventListener("click", () => {
+    if (printData) window.print();
+  });
+  // Ctrl+P uses the same current selection and carries no stale hidden estimates.
+  window.addEventListener("beforeprint", renderPrintSheet);
   function updateNames() {
     list.querySelectorAll("[data-item-name]").forEach((node) => {
       const info = names.get(node.dataset.itemName);
@@ -150,6 +271,7 @@
           input.setAttribute("aria-invalid", "true");
           estimates.replaceChildren();
           estimates.removeAttribute("aria-busy");
+          invalidatePrint("Correct quantities to whole numbers from 1 to 99 before printing.");
           message.textContent = "Enter a whole quantity from 1 to 99 to update estimates. The last valid quantity is saved.";
           return;
         }
@@ -213,12 +335,18 @@
   async function refresh(rebuild) {
     if (controller) controller.abort();
     const requestRevision = ++revision;
+    invalidatePrint("Estimates are not ready. Load valid estimates before printing a shopping checklist.");
     if (rebuild) renderItems();
     empty.hidden = state[source].length > 0;
     content.hidden = state[source].length === 0;
     estimates.replaceChildren();
     estimates.removeAttribute("aria-busy");
-    if (!state[source].length) { message.textContent = ""; return; }
+    if (!state[source].length) {
+      pickedUp.clear();
+      invalidatePrint("Your shopping list is empty. Add products before printing a checklist.");
+      message.textContent = "";
+      return;
+    }
     if (list.querySelector("[aria-invalid='true']")) {
       message.textContent = "Enter a whole quantity from 1 to 99 to update estimates.";
       return;
@@ -236,6 +364,7 @@
       data.items.forEach((item) => names.set(item.slug, item));
       updateNames();
       renderEstimates(data);
+      preparePrint(data);
       message.textContent = "Estimates updated. Prices are dated observations; delivery and checkout charges are excluded.";
     } catch (error) {
       if (error.name !== "AbortError" && requestRevision === revision) {
