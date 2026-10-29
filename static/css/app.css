@@ -1054,6 +1054,28 @@ h3 {
   font-weight:650;
 }
 
+.standard-unit-price {
+  display:block;
+  margin-top:3px;
+  font-size:11px;
+  font-weight:500;
+  line-height:1.4;
+  letter-spacing:normal;
+  color:var(--muted);
+  overflow-wrap:anywhere;
+}
+
+.offer-price {
+  margin-left:auto;
+  text-align:right;
+  min-width:0;
+}
+
+.offer-price .standard-unit-price {
+  max-width:145px;
+  font-size:10px;
+}
+
 .compare-link {
   display:flex;
   justify-content:space-between;

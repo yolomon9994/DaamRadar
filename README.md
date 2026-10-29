@@ -69,10 +69,13 @@ To take a checklist to the store, open **Take your list with you**, select a ret
 
 To back up or move an editable list, use **Back up or transfer your list → Download list JSON**. On another local installation, choose **Preview a list file**, review local matches, then **Merge** quantities or **Replace** that catalog's list. Files contain product identities and quantities; prices come from the receiving database. Uncertain matches remain visible and unpriced. See [transfer rules and file format](docs/shopping-list.md#back-up-or-transfer-an-editable-list).
 
+Product cards, retailer listings and included basket items also show **Rs/L**, **Rs/kg** or **Rs/item** alongside the pack price. These rates use total pack contents, including multipacks; unknown sizes show **Unit price unavailable**. For example, the fictional demo's 250 ml milk at Rs. 85 is Rs. 340/L. See [calculation rules and API fields](docs/unit-pricing.md).
+
 ## Implemented
 
 - Responsive homepage, category navigation, search, comparison cards, detail tables, source transparency, and empty/error states.
 - Browser-saved shopping lists with pack quantities, separate demo/collected lists and read-only retailer basket estimates. Per-item exclusions and coverage keep incomplete subtotals separate from full estimates; no cheapest-basket claim is made. See [shopping lists](docs/shopping-list.md).
+- Standard-unit price labels (Rs/L, Rs/kg and Rs/item) on cards, detail listings, basket breakdowns and retailer print checklists. Decimal calculations include multipacks and preserve the original eligibility/area rules. See [unit pricing](docs/unit-pricing.md).
 - Retailer-selectable shopping checklists for browser printing/Save as PDF, with pack sizes, purchase checkboxes, check dates and exclusions. Items-only mode omits prices; printed totals retain the same basket safeguards.
 - Shopping-list JSON downloads and import previews with explicit merge/replace choices, conservative local identity matching, catalog separation and retained unpriced items. Imports never restore prices or modify the catalog.
 - Local database search with case-insensitive partial and fuzzy matches; compatible size filtering; category/retailer/brand filters; price sorting; pagination.

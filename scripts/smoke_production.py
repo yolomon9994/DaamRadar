@@ -110,10 +110,17 @@ def main():
                     check(detail.status_code == 200 and "Demo comparison" in detail.text, "Production comparison and history render")
                     api = client.get(base + "/api/products/?source=demo", headers=headers, timeout=5)
                     check(api.status_code == 200 and api.json()["count"] == 12, "Production product API")
+                    milk = next(product for product in api.json()["results"] if product["slug"] == "demo-olpers-milk-1l")
+                    check(milk["standard_unit_price"]["amount"] == "325.00" and milk["standard_unit_price"]["unit"] == "L",
+                          "Production API standard-unit prices")
                     shopping = client.get(base + "/shopping-list/?source=demo", headers=headers, timeout=5)
                     check(shopping.status_code == 200 and "Fictional demo basket" in shopping.text, "Production shopping list page")
                     basket = client.get(base + "/api/basket/?source=demo&item=demo-olpers-milk-1l:2", headers=headers, timeout=5)
                     check(basket.status_code == 200 and all(row["is_complete"] for row in basket.json()["retailers"]), "Production basket estimates")
+                    check(all(line["standard_unit_price"]["amount"] == line["unit_price"]
+                              and line["standard_unit_price"]["unit"] == "L"
+                              for row in basket.json()["retailers"] for line in row["lines"]),
+                          "Production basket standard-unit prices")
                     preview = client.post(base + "/api/shopping-list/preview/", headers=headers, timeout=5, json={
                         "format": "daamradar-shopping-list", "version": 1, "source": "demo",
                         "exported_at": basket.json()["estimated_at"], "items": [{

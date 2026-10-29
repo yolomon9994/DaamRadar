@@ -148,7 +148,7 @@
     const table = element("table", undefined, "print-checklist");
     const head = table.createTHead().insertRow();
     const headings = ["Picked up", "Product / pack size", "Packs", "Status / last observation"];
-    if (retailer) headings.push("Each (PKR)", "Line (PKR)");
+    if (retailer) headings.push("Pack / unit rate (PKR)", "Line (PKR)");
     headings.forEach((text) => {
       const cell = element("th", text);
       cell.scope = "col";
@@ -184,7 +184,9 @@
       status.append(element("small", checkedAt ? "Checked " + printTime(checkedAt) : "No price-check date available"));
       if (line && line.delivery_area) status.append(element("small", line.delivery_area));
       if (retailer) {
-        row.insertCell().textContent = line && line.unit_price !== null ? money(line.unit_price) : "Excluded";
+        const priceCell = row.insertCell();
+        priceCell.textContent = line && line.unit_price !== null ? money(line.unit_price) : "Excluded";
+        if (line && line.unit_price !== null) priceCell.append(element("small", line.standard_unit_price?.display || "Unit price unavailable"));
         row.insertCell().textContent = line && line.line_total !== null ? money(line.line_total) : "Excluded";
       }
     });
@@ -324,6 +326,7 @@
         row.append(element("span", `${line.quantity} pack(s) · ${statusLabels[line.status] || line.status}`));
         if (line.line_total !== null) {
           row.append(element("span", money(line.unit_price) + " each · " + money(line.line_total) + " total"));
+          row.append(element("span", line.standard_unit_price?.display || "Unit price unavailable", "standard-unit-price"));
           const time = element("time", "Checked " + new Date(line.last_checked).toLocaleString() + " (your local time)");
           time.dateTime = line.last_checked;
           row.append(time, element("span", line.delivery_area || "Area unspecified"));

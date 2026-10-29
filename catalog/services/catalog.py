@@ -8,6 +8,7 @@ from rapidfuzz.fuzz import WRatio
 
 from catalog.matching.normalization import identify, normalize_text
 from catalog.models import Product, RetailerListing
+from catalog.services.unit_pricing import standard_unit_price
 
 SORTS = {"relevance": "Recommended", "price_asc": "Lowest price", "price_desc": "Highest price"}
 
@@ -35,12 +36,14 @@ def decorate(product):
     product.has_comparison = len({o.retailer_id for o in eligible}) > 1 and area_known
     product.comparison_area = eligible[0].delivery_area if product.has_comparison and not product.is_demo else ""
     product.best_price = min((o.current_price for o in eligible), default=None)
+    product.standard_unit_price = standard_unit_price(product, product.best_price)
     product.best_ids = {o.id for o in eligible if o.current_price == product.best_price} if product.has_comparison else set()
     product.offer_count = len(product.offers)
     product.savings = (max(o.current_price for o in eligible) - product.best_price) if product.has_comparison else Decimal("0")
     product.sort_price = product.best_price
     for offer in product.offers:
         offer.is_best = offer.id in product.best_ids
+        offer.standard_unit_price = standard_unit_price(product, offer.current_price)
     return product
 
 

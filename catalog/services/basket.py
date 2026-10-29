@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from catalog.models import Product, Retailer, RetailerListing
 from catalog.services.list_transfer import product_descriptor
+from catalog.services.unit_pricing import standard_unit_price
 
 
 def money(value):
@@ -71,6 +72,7 @@ def estimate_basket(items, source, unresolved=()):
                 unverified |= not demo and not verified
             lines.append({"slug": slug, "quantity": quantity, "status": status,
                           "unit_price": money(chosen.current_price) if chosen else None,
+                          "standard_unit_price": standard_unit_price(product, chosen.current_price) if chosen else None,
                           "line_total": money(line_total),
                           "last_checked": chosen.last_checked.isoformat() if chosen else None,
                           "last_observed_at": max(o.last_checked for o in candidates).isoformat() if candidates else None,
