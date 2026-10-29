@@ -101,6 +101,14 @@ def main():
                     check(redirect.status_code == 301 and redirect.headers["Location"].startswith("https://"), "HTTP redirects to HTTPS")
                     home = client.get(base + "/?source=demo", headers=headers, timeout=5)
                     check(home.status_code == 200 and "fictional" in home.text, "Production homepage with explicit demo data")
+                    sources = client.get(base + "/sources/", headers=headers, timeout=5)
+                    check(sources.status_code == 200 and 'data-source-health' in sources.text
+                          and 'data-source-total="live">0<' in sources.text
+                          and 'data-source-management' not in sources.text
+                          and 'no-store' in sources.headers.get("Cache-Control", ""),
+                          "Production public freshness snapshot excludes demo and operator controls")
+                    source_post = client.post(base + "/sources/", headers=headers, timeout=5)
+                    check(source_post.status_code in (403, 405), "Public source page rejects collection POSTs")
                     for asset in ("css/app.css", "js/app.js", "js/list-transfer.js", "js/shopping-list.js", "js/watchlist.js"):
                         path = "/static/" + manifest[asset]
                         check(path in home.text, f"Homepage references hashed {asset}")

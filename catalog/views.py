@@ -1,12 +1,14 @@
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, render
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_safe
 
 from .models import Category, Product, Retailer, RetailerListing
 from .services.catalog import SORTS, decorate, get_product_queryset, search_catalog, select_source
 from .services.history import price_history_chart
 from .services.price_changes import attach_price_changes
-from .services.delivery_review import DELIVERY_REVIEWS
+from .services.collection_health import can_view_collection_health
+from .services.source_health import source_health
 
 
 def home(request):
@@ -30,13 +32,16 @@ def product_detail(request, slug):
                                                   "history_chart": price_history_chart(product)})
 
 
+@never_cache
+@require_safe
 def sources(request):
-    retailers = list(Retailer.objects.annotate(collected_count=Count("listings", filter=Q(listings__is_demo=False, listings__product__is_demo=False))))
-    for retailer in retailers:
-        retailer.delivery_review = DELIVERY_REVIEWS.get(retailer.slug)
+    health = source_health()
+    operator = request.user.is_active and request.user.is_staff and can_view_collection_health(request.user)
     return render(request, "catalog/sources.html", {
-        "retailers": retailers,
-        "collected_count": RetailerListing.objects.filter(is_demo=False, product__is_demo=False).count(),
+        **health, "collected_count": health["totals"]["live"],
+        "show_collection_controls": operator,
+        "can_refresh_prices": operator and request.user.has_perm("catalog.run_price_refresh"),
+        "can_import_catalog": operator and request.user.has_perm("catalog.import_reviewed_catalog"),
     })
 
 

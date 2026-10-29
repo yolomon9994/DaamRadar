@@ -6,8 +6,8 @@ The release target is a reliable local grocery comparison and planning applicati
 | --- | --- | --- |
 | 1 | Price-change indicators and reliable captured historical context | Complete; see [implementation and validation](price-changes.md) |
 | 2 | Broader manually reviewed catalog using supported sources; aim for roughly 30 products across several categories, subject to source access and review | Complete: 31 collected products, 40 listings, four categories; see [scope and validation](expanded-catalog.md) |
-| 3 | Public freshness/source-health overview linked to existing authorized collection controls | Next |
-| 4 | Search suggestions, fresh/in-stock and price-range filters, useful empty results | Pending |
+| 3 | Public freshness/source-health overview linked to existing authorized collection controls | Complete; see [behavior and validation](public-source-health.md) |
+| 4 | Search suggestions, fresh/in-stock and price-range filters, useful empty results | Next |
 | 5 | Dedicated comparison of compatible pack sizes, with product and delivery differences visible | Pending |
 | 6 | In-list product search/addition and undo for removal/clearing | Pending |
 | 7 | Validated portable backups for watch targets and budgets alongside existing shopping-list transfers | Pending |

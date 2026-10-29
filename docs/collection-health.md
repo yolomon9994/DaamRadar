@@ -1,5 +1,7 @@
 # Admin collection health
 
+For a visitor-facing summary, use [Our sources and price freshness](public-source-health.md) at `/sources/`. It shows dated counts and safe collection outcomes without private logs; authorized staff see links back to the admin controls described here.
+
 Sign in to Django admin and choose **Collection health** in the header or on the retailer list. The direct route is `/admin/catalog/retailer/collection-health/`. Existing admin credentials apply. Diagnostic views remain read-only. An explicit **Start manual refresh** action is now available to authorized operators; see [manual admin refresh](admin-refresh.md) for its additional permission, migration, worker and recovery behavior.
 
 For an initial real catalog, choose **Import reviewed catalog — preview batches**. This separate [missing-only import flow](admin-catalog-import.md) previews existing/missing listings, requires an additional import permission and uses the same worker reservation/progress pages. Opening a preview does not collect or enable sources.
