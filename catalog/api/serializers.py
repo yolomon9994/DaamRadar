@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 from catalog.models import Category, PriceHistory, Product, Retailer, RetailerListing
+from catalog.services.observations import context_known
 
 
 class BasketQuerySerializer(serializers.Serializer):
@@ -118,10 +119,11 @@ class ListingSerializer(serializers.ModelSerializer):
     is_best = serializers.BooleanField(read_only=True, default=False)
     area_is_verified = serializers.BooleanField(read_only=True)
     standard_unit_price = serializers.JSONField(read_only=True, default=None)
+    price_change = serializers.JSONField(read_only=True, default=None)
 
     class Meta:
         model = RetailerListing
-        fields = ["id", "retailer", "original_title", "url", "current_price", "standard_unit_price", "currency", "availability", "last_checked", "delivery_area", "delivery_area_key", "area_evidence_url", "area_verified_at", "area_is_verified", "is_demo", "is_stale", "is_best"]
+        fields = ["id", "retailer", "original_title", "url", "current_price", "standard_unit_price", "price_change", "currency", "availability", "last_checked", "delivery_area", "delivery_area_key", "area_evidence_url", "area_verified_at", "area_is_verified", "is_demo", "is_stale", "is_best"]
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -141,8 +143,15 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class HistorySerializer(serializers.ModelSerializer):
-    is_demo = serializers.BooleanField(source="listing.is_demo")
+    is_demo = serializers.SerializerMethodField()
+    context_status = serializers.SerializerMethodField()
+
+    def get_is_demo(self, obj):
+        return obj.context["is_demo"] if context_known(obj.context) else None
+
+    def get_context_status(self, obj):
+        return "captured" if context_known(obj.context) else "unknown"
 
     class Meta:
         model = PriceHistory
-        fields = ["price", "checked_at", "is_demo"]
+        fields = ["price", "checked_at", "is_demo", "context_status", "context"]

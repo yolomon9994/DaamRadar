@@ -89,6 +89,7 @@ To follow a regular purchase, select **Watch price** on its card or detail page,
 - Normalized metric quantities, brand aliases, pack counts, variant and packaging guards, GTIN checks, RapidFuzz ranking, and conservative canonical linking.
 - Atomic listing upserts with a history observation for every check, even if the price is unchanged.
 - Product price-history charts with separate retailer series, dated PKR markers, keyboard/pointer inspection, retailer filters and an exact-values table. Single observations remain single points; fictional demo histories stay labeled. SVG and table work without JavaScript. See [chart behavior and validation](docs/price-history.md).
+- Recorded price-change indicators on cards/detail listings and the product API. New observations capture pack, source, stock and delivery context; unknown or incompatible histories withhold changes. Existing history is preserved without guessed metadata. See [change rules and migration](docs/price-changes.md).
 - Read-only REST API, administration interface, SQLite default, and environment-based PostgreSQL configuration.
 - Evidence-based delivery-area comparisons: live winners require a shared scope and dated, source-linked evidence for each eligible observation. New imports clear old verification. Dated public delivery findings appear on the sources page; current listings remain unverified. See [delivery findings and validation](docs/delivery-areas.md).
 - Admin collection-health dashboard with per-source freshness, successful/latest runs, paused/running source state, a paginated stale-listing queue and recent failures/partial runs. It excludes demo data and requires the relevant model view/change permissions. See [dashboard access and behavior](docs/collection-health.md).
@@ -117,6 +118,8 @@ To follow a regular purchase, select **Watch price** on its card or detail page,
 | `GET /health/` | Database connectivity readiness; generic 200/503 response |
 
 Product list parameters: `q`, `category` (slug), `retailer` (slug), `brand`, `source=demo|live`, `sort=relevance|price_asc|price_desc`, `page`, and `page_size` (up to 48).
+
+Product listings include guarded `price_change` metadata. Historical observations expose their captured `context`; history `is_demo` is nullable for legacy observations whose source was not recorded. See [history compatibility and migration](docs/price-changes.md).
 
 ```text
 /api/products/?q=Olpers%20Milk%201L&source=demo
@@ -248,6 +251,8 @@ docs/                     Architecture and dated source investigation
 `requirements.txt` declares supported ranges; `requirements.lock.txt` records the exact versions installed during this build.
 
 ## Current focus and next implementation phase
+
+Follow the [ordered v1 roadmap](docs/roadmap.md). The analysis-export/notebook and measured matching-evaluation milestones (original items 9 and 10) are excluded from the current release plan at the author's request.
 
 The current distribution target is a downloadable local application with useful grocery-planning features. Hosting is deferred; the production tooling remains available for later use. Shopping lists and retailer basket estimates now support planning across multiple products. The [portfolio case study](docs/data-science-case-study.md) records implemented data work and possible future analytical milestones separately.
 

@@ -145,6 +145,8 @@ class PriceHistory(models.Model):
     listing = models.ForeignKey(RetailerListing, on_delete=models.CASCADE, related_name="history")
     price = models.DecimalField(max_digits=12, decimal_places=2)
     checked_at = models.DateTimeField(default=timezone.now, db_index=True)
+    context = models.JSONField(null=True, blank=True, default=None,
+        help_text="Captured observation context. Null means legacy/unknown; never infer it from today's listing.")
 
     class Meta:
         ordering = ["-checked_at"]

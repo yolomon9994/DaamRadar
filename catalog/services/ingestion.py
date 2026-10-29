@@ -11,6 +11,7 @@ from django.utils.text import slugify
 
 from catalog.matching.normalization import identify, match_score
 from catalog.models import PriceHistory, Product, RetailerListing
+from catalog.services.observations import observation_context
 
 
 @transaction.atomic
@@ -66,5 +67,6 @@ def ingest(retailer, item, *, is_demo=False, category=None, illustration=None, c
         # A competing insert won the unique-key race. Undo any new canonical product.
         transaction.set_rollback(True)
         return listing, False
-    PriceHistory.objects.create(listing=listing, price=price, checked_at=checked_at)
+    PriceHistory.objects.create(listing=listing, price=price, checked_at=checked_at,
+                                context=observation_context(listing, product=product, retailer=retailer))
     return listing, created

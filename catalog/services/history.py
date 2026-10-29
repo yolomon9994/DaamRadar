@@ -4,10 +4,11 @@ from datetime import datetime, timezone as datetime_timezone
 from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR
 from zoneinfo import ZoneInfo
 
-from django.db.models import F, Window
+from django.db.models import F, Q, Window
 from django.db.models.functions import RowNumber
 
 from catalog.models import PriceHistory
+from catalog.services.observations import context_known, same_context
 
 HISTORY_LIMIT = 120
 PKT = ZoneInfo("Asia/Karachi")
@@ -21,7 +22,10 @@ def price_history_chart(product):
     offers = sorted((offer for offer in product.offers if offer.is_demo == product.is_demo),
                     key=lambda offer: (offer.retailer.name, offer.pk))
     grouped = defaultdict(list)
-    rows = PriceHistory.objects.filter(listing_id__in=[offer.pk for offer in offers]).annotate(
+    rows = PriceHistory.objects.filter(listing_id__in=[offer.pk for offer in offers]).filter(
+        Q(context__isnull=True) | Q(context__version=1, context__product_id=product.pk,
+                                   context__is_demo=product.is_demo, context__product_is_demo=product.is_demo)
+    ).annotate(
         position=Window(RowNumber(), partition_by=[F("listing_id")],
                         order_by=[F("checked_at").desc(), F("pk").desc()]),
     ).filter(position__lte=HISTORY_LIMIT + 1).order_by("listing_id", "-checked_at", "-pk")
@@ -36,16 +40,21 @@ def price_history_chart(product):
         recent = list(reversed(recent[:HISTORY_LIMIT]))
         label = offer.retailer.name
         if retailer_counts[offer.retailer_id] > 1:
-            label += f" · {offer.delivery_area or 'Area unspecified'} · listing {offer.pk}"
+            label += f" · current listing: {offer.delivery_area or 'Area unspecified'} · listing {offer.pk}"
         color, dash = STYLES[index % len(STYLES)]
         item = {"id": f"history-series-{offer.pk}", "listing_id": offer.pk, "label": label,
                 "area": offer.delivery_area, "color": color, "dash": dash,
                 "points": [], "truncated": truncated}
         for row in recent:
-            record = {"price": row.price, "checked_at": row.checked_at.astimezone(PKT), "label": label,
-                      "series_id": item["id"], "pk": row.pk}
+            known = context_known(row.context)
+            historical_area = (row.context["delivery_area"] or "Area unspecified") if known else "Historical area unknown"
+            record = {"price": row.price, "checked_at": row.checked_at.astimezone(PKT),
+                      "label": f"{offer.retailer.name} · {historical_area} · listing {offer.pk}",
+                      "series_id": item["id"], "pk": row.pk, "context": row.context, "context_known": known}
             item["points"].append(record)
             records.append(record)
+        if any(not point["context_known"] or point["context"]["delivery_area"] != offer.delivery_area for point in item["points"]):
+            item["area"] = "Historical area varies or is unknown; see recorded context."
         series.append(item)
 
     chart = {"series": series, "records": sorted(records, key=lambda row: (row["checked_at"], row["pk"])),
@@ -73,4 +82,19 @@ def price_history_chart(product):
             point["x"] = LEFT + (RIGHT - LEFT) * (point["checked_at"].timestamp() - start) / (end - start) if end != start else (LEFT + RIGHT) / 2
             point["y"] = BOTTOM - float((point["price"] - low) / (high - low)) * (BOTTOM - TOP)
         item["polyline"] = " ".join(f'{point["x"]:.3f},{point["y"]:.3f}' for point in item["points"])
+        segments, segment = [], []
+        for point in item["points"]:
+            if segment:
+                previous = segment[-1]
+                legacy = not previous["context_known"] and not point["context_known"]
+                compatible = (same_context(previous["context"], point["context"])
+                              and previous["context"]["availability"] == point["context"]["availability"])
+                if not legacy and not compatible:
+                    segments.append(segment)
+                    segment = []
+            segment.append(point)
+        if segment:
+            segments.append(segment)
+        item["segments"] = [" ".join(f'{point["x"]:.3f},{point["y"]:.3f}' for point in segment)
+                            for segment in segments if len(segment) > 1]
     return chart

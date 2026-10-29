@@ -113,6 +113,12 @@ def main():
                     milk = next(product for product in api.json()["results"] if product["slug"] == "demo-olpers-milk-1l")
                     check(milk["standard_unit_price"]["amount"] == "325.00" and milk["standard_unit_price"]["unit"] == "L",
                           "Production API standard-unit prices")
+                    check(all(offer["price_change"]["status"] == "no_previous" for offer in milk["listings"]),
+                          "Single-observation demo prices do not invent changes")
+                    observed = client.get(base + f"/api/listings/{milk['listings'][0]['id']}/history/", headers=headers, timeout=5)
+                    check(observed.status_code == 200 and all(row["context_status"] == "captured"
+                          and row["is_demo"] is True and row["context"]["product"]["quantity"] == "1000.000"
+                          for row in observed.json()["results"]), "Production observation-context capture and API")
                     shopping = client.get(base + "/shopping-list/?source=demo", headers=headers, timeout=5)
                     check(shopping.status_code == 200 and "Fictional demo basket" in shopping.text, "Production shopping list page")
                     basket = client.get(base + "/api/basket/?source=demo&item=demo-olpers-milk-1l:2", headers=headers, timeout=5)

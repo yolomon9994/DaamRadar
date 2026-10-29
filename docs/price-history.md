@@ -2,6 +2,8 @@
 
 Product pages show a separate series for each retailer listing, using only stored `PriceHistory` observations. No retailer requests or additional observations are made when someone opens a page. Source links, availability, delivery-area cautions and current-price comparison rules keep their existing behavior.
 
+The [observation-context milestone](price-changes.md) adds captured pack, stock, source and delivery metadata, unknown labels for legacy history, guarded price-change indicators, and chart line breaks when captured context/stock changes. Known records for another captured product/catalog are excluded from the current product chart. The full listing-history API preserves them and exposes historical source as nullable when unknown. Historical areas come from each snapshot; current listing labels are identified as current. The original validation sections below describe the earlier chart milestone; current context/change validation is documented in the linked guide.
+
 ## Reading the chart
 
 - Each dot is an actual recorded price at its check time. Time spacing reflects elapsed time, not observation order. Dates and times are explicitly Pakistan time, including seconds for nearby checks.

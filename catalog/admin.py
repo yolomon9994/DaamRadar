@@ -231,5 +231,21 @@ class RetailerAdmin(admin.ModelAdmin):
         return JsonResponse(refresh_progress(self.get_refresh(request, job_id)))
 
 
-admin.site.register([Category, PriceHistory])
+@admin.register(PriceHistory)
+class PriceHistoryAdmin(admin.ModelAdmin):
+    list_display = ["id", "listing", "price", "checked_at"]
+    list_select_related = ["listing", "listing__retailer"]
+    readonly_fields = ["listing", "price", "checked_at", "context"]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+admin.site.register(Category)
 admin.site.site_header = "DaamRadar administration"

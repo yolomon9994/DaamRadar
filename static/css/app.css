@@ -1101,6 +1101,9 @@ h3 {
   max-width:145px;
   font-size:10px;
 }
+.price-change {display:block; margin-top:5px; max-width:185px; font-size:10px; line-height:1.4; color:var(--muted); overflow-wrap:anywhere;}
+.price-change[data-price-change="decreased"] {color:var(--green); font-weight:600;}
+.price-change[data-price-change="increased"] {color:#934322; font-weight:600;}
 
 .compare-link {
   display:flex;

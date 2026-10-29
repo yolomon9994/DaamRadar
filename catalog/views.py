@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, render
 from .models import Category, Product, Retailer, RetailerListing
 from .services.catalog import SORTS, decorate, get_product_queryset, search_catalog, select_source
 from .services.history import price_history_chart
+from .services.price_changes import attach_price_changes
 from .services.delivery_review import DELIVERY_REVIEWS
 
 
@@ -12,6 +13,7 @@ def home(request):
     source = select_source(request.GET)
     results = search_catalog({**request.GET.dict(), "source": source})
     page = Paginator(results, 12).get_page(request.GET.get("page"))
+    attach_price_changes(page.object_list)
     return render(request, "catalog/home.html", {
         "page_obj": page, "categories": Category.objects.all(), "retailers": Retailer.objects.all(),
         "brands": Product.objects.filter(is_demo=source == "demo").exclude(brand="").values_list("brand", flat=True).distinct().order_by("brand"),
@@ -23,6 +25,7 @@ def home(request):
 
 def product_detail(request, slug):
     product = decorate(get_object_or_404(get_product_queryset(), slug=slug))
+    attach_price_changes([product])
     return render(request, "catalog/detail.html", {"product": product, "source": "demo" if product.is_demo else "live",
                                                   "history_chart": price_history_chart(product)})
 

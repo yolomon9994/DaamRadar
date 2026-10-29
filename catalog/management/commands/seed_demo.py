@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from catalog.matching.normalization import identify
 from catalog.models import Category, PriceHistory, Product, Retailer, RetailerListing
+from catalog.services.observations import observation_context
 
 CATEGORIES = [("Dairy & eggs", "dairy", "milk"), ("Pantry essentials", "pantry", "jar"),
               ("Snacks & treats", "snacks", "snack"), ("Drinks & tea", "drinks", "tea"),
@@ -53,5 +54,6 @@ class Command(BaseCommand):
                     defaults={"product": product, "original_title": title, "current_price": Decimal(price),
                               "availability": "in_stock", "last_checked": timezone.now(), "delivery_area": "Demo area"})
                 if created:
-                    PriceHistory.objects.create(listing=listing, price=listing.current_price, checked_at=listing.last_checked)
+                    PriceHistory.objects.create(listing=listing, price=listing.current_price, checked_at=listing.last_checked,
+                                                context=observation_context(listing, product=product, retailer=retailer))
         self.stdout.write(self.style.SUCCESS("Demo catalog ready: 12 sample products. Prices are fictional; no live prices were collected."))

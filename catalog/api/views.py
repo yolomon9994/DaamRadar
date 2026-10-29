@@ -12,6 +12,7 @@ from catalog.services.basket import estimate_basket
 from catalog.services.catalog import decorate, get_product_queryset, search_catalog
 from catalog.services.list_transfer import resolve_list
 from catalog.services.watchlist import check_targets
+from catalog.services.price_changes import attach_price_changes
 from .serializers import (BasketQuerySerializer, CategorySerializer, HistorySerializer,
                           ListTransferSerializer, ProductSerializer, RetailerSerializer, WatchlistQuerySerializer)
 
@@ -65,6 +66,12 @@ class ProductList(ListAPIView):
     def get_queryset(self):
         return search_catalog(self.request.query_params)
 
+    def get_serializer(self, *args, **kwargs):
+        # Load history only for the serialized page, in one bounded query.
+        if kwargs.get("many") and args:
+            attach_price_changes(args[0])
+        return super().get_serializer(*args, **kwargs)
+
 
 class ProductDetail(RetrieveAPIView):
     serializer_class = ProductSerializer
@@ -74,7 +81,9 @@ class ProductDetail(RetrieveAPIView):
         return get_product_queryset()
 
     def get_object(self):
-        return decorate(super().get_object())
+        product = decorate(super().get_object())
+        attach_price_changes([product])
+        return product
 
 
 class RetailerList(ListAPIView):
