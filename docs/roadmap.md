@@ -8,8 +8,8 @@ The release target is a reliable local grocery comparison and planning applicati
 | 2 | Broader manually reviewed catalog using supported sources; aim for roughly 30 products across several categories, subject to source access and review | Complete: 31 collected products, 40 listings, four categories; see [scope and validation](expanded-catalog.md) |
 | 3 | Public freshness/source-health overview linked to existing authorized collection controls | Complete; see [behavior and validation](public-source-health.md) |
 | 4 | Search suggestions, fresh/in-stock and price-range filters, useful empty results | Complete; see [behavior and validation](search.md) |
-| 5 | Dedicated comparison of compatible pack sizes, with product and delivery differences visible | Next |
-| 6 | In-list product search/addition and undo for removal/clearing | Pending |
+| 5 | Dedicated comparison of compatible pack sizes, with product and delivery differences visible | Complete; see [membership, safeguards and validation](pack-comparison.md) |
+| 6 | In-list product search/addition and undo for removal/clearing | Next |
 | 7 | Validated portable backups for watch targets and budgets alongside existing shopping-list transfers | Pending |
 | 8 | Catalog-quality review report for missing sizes, duplicates, conflicts and uncertain matches | Pending |
 | 9 | Analysis export and reproducible notebook | Skipped |

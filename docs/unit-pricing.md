@@ -1,5 +1,7 @@
 # Standard-unit prices
 
+The [dedicated pack-size comparison](pack-comparison.md) builds on this calculator, with conservative size-family membership and separately guarded unit-rate highlights. The general labels described below remain display calculations and do not independently select a winner.
+
 Cards and product detail pages show a calculated **Rs/L**, **Rs/kg** or **Rs/item** beside the listed pack price. Each retailer row has its own rate. Included basket lines and retailer print checklists show the same rate; items-only checklists omit prices. The feature works locally with both fictional demo data and collected observations and performs no retailer requests.
 
 ## Calculation

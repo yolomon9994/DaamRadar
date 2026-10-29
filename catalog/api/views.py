@@ -9,7 +9,8 @@ from django.views.decorators.cache import never_cache
 from django.urls import reverse
 from rest_framework.exceptions import ValidationError
 
-from catalog.models import Category, Retailer, RetailerListing
+from catalog.models import Category, Product, Retailer, RetailerListing
+from catalog.services.pack_comparison import SORTS as PACK_SORTS, pack_comparison
 from catalog.services.basket import estimate_basket
 from catalog.services.catalog import decorate, get_product_queryset, search_catalog, search_suggestions, select_source
 from catalog.search_filters import InvalidOfferFilters
@@ -18,6 +19,16 @@ from catalog.services.watchlist import check_targets
 from catalog.services.price_changes import attach_price_changes
 from .serializers import (BasketQuerySerializer, CategorySerializer, HistorySerializer,
                           ListTransferSerializer, ProductSerializer, RetailerSerializer, WatchlistQuerySerializer)
+
+
+@method_decorator(never_cache, name="dispatch")
+class PackComparison(APIView):
+    def get(self, request, slug):
+        product = get_object_or_404(Product, slug=slug)
+        sort = request.query_params.get("sort", "size")
+        if sort not in PACK_SORTS:
+            raise ValidationError({"sort": "Choose a supported pack comparison sort."})
+        return Response(pack_comparison(product, sort=sort))
 
 
 @method_decorator(never_cache, name="dispatch")

@@ -116,6 +116,15 @@ def main():
                         check(response.status_code == 200 and len(response.content) > 0, f"WhiteNoise serves {asset}")
                     detail = client.get(base + "/products/demo-olpers-milk-1l/", headers=headers, timeout=5)
                     check(detail.status_code == 200 and "Demo comparison" in detail.text, "Production comparison and history render")
+                    packs = client.get(base + "/products/demo-olpers-milk-1l/pack-comparison/", headers=headers, timeout=5)
+                    check(packs.status_code == 200 and "Fictional Demo comparison" in packs.text
+                          and "Lowest sample unit rate" in packs.text and "no-store" in packs.headers.get("Cache-Control", ""),
+                          "Production pack-size comparison renders with demo safeguards")
+                    pack_api = client.get(base + "/api/products/demo-olpers-milk-1l/pack-comparison/?sort=unit_price", headers=headers, timeout=5)
+                    check(pack_api.status_code == 200 and pack_api.json()["displayed_product_count"] == 2
+                          and pack_api.json()["alternative_pack_count"] == 1 and pack_api.json()["ranking_available"]
+                          and pack_api.json()["rows"][0]["standard_unit_price"]["amount"] == "325.00"
+                          and all(not row["url"] for row in pack_api.json()["rows"]), "Production pack-size API uses total contents and disabled demo purchase links")
                     api = client.get(base + "/api/products/?source=demo", headers=headers, timeout=5)
                     check(api.status_code == 200 and api.json()["count"] == 12, "Production product API")
                     milk = next(product for product in api.json()["results"] if product["slug"] == "demo-olpers-milk-1l")

@@ -10,6 +10,7 @@ from .services.price_changes import attach_price_changes
 from .services.collection_health import can_view_collection_health
 from .services.source_health import source_health
 from .search_filters import OfferFilterForm, filters_active
+from .services.pack_comparison import SORTS as PACK_SORTS, pack_comparison
 
 
 def home(request):
@@ -42,6 +43,17 @@ def product_detail(request, slug):
     attach_price_changes([product])
     return render(request, "catalog/detail.html", {"product": product, "source": "demo" if product.is_demo else "live",
                                                   "history_chart": price_history_chart(product)})
+
+
+@never_cache
+@require_safe
+def compare_packs(request, slug):
+    product = get_object_or_404(Product, slug=slug)
+    sort = request.GET.get("sort", "size")
+    error = "Choose a supported pack comparison sort." if sort not in PACK_SORTS else ""
+    data = pack_comparison(product, sort=sort) if not error else {"source": "demo" if product.is_demo else "live"}
+    return render(request, "catalog/pack_comparison.html", {**data, "product": product, "sorts": PACK_SORTS,
+                                                          "sort_error": error}, status=400 if error else 200)
 
 
 @never_cache
