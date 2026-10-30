@@ -13,6 +13,7 @@ from django.views.decorators.http import require_POST, require_safe
 
 from .models import AdminPriceRefresh, Category, PriceHistory, Product, Retailer, RetailerListing, ScrapeRun
 from .services.collection_health import can_view_collection_health, collection_health
+from .services.catalog_quality import CHECKS as QUALITY_CHECKS, can_view_catalog_quality, catalog_quality
 from .services.admin_refresh import can_start_refresh, launch_refresh, refresh_progress, validate_refresh, validate_worker_database
 from .services.admin_refresh import can_start_import, validate_import
 from .services.catalog_import import import_batch_choices, plan_import
@@ -32,11 +33,51 @@ class ImportStartForm(ImportBatchForm):
     batch = forms.ChoiceField(choices=import_batch_choices, widget=forms.HiddenInput)
     preview_token = forms.CharField(max_length=10000, widget=forms.HiddenInput)
 
+
+class CatalogQualityForm(forms.Form):
+    source = forms.ChoiceField(label="Catalog", choices=[("live", "Collected"), ("demo", "Demo")], initial="live")
+    severity = forms.ChoiceField(choices=[("all", "All severities"), ("error", "Conflicts"), ("warning", "Needs review")], initial="all")
+    check = forms.ChoiceField(label="Check", choices=[("all", "All checks"), *QUALITY_CHECKS.items()], initial="all")
+    format = forms.ChoiceField(choices=[("html", "HTML"), ("json", "JSON")], initial="html", widget=forms.HiddenInput)
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ["canonical_name", "brand", "category", "is_demo"]
     list_filter = ["is_demo", "category"]
     search_fields = ["canonical_name", "brand", "gtin"]
+    change_list_template = "admin/catalog/product/change_list.html"
+
+    def get_urls(self):
+        return [path("quality/", self.admin_site.admin_view(self.quality_report), name="catalog_quality")] + super().get_urls()
+
+    def changelist_view(self, request, extra_context=None):
+        return super().changelist_view(request, {**(extra_context or {}),
+                                               "can_view_catalog_quality": can_view_catalog_quality(request.user)})
+
+    @method_decorator(require_safe)
+    def quality_report(self, request):
+        if not can_view_catalog_quality(request.user):
+            raise PermissionDenied
+        data = {"source": "live", "severity": "all", "check": "all", "format": "html", **request.GET.dict()}
+        form = CatalogQualityForm(data)
+        valid = form.is_valid()
+        report = catalog_quality(**{key: form.cleaned_data[key] for key in ("source", "severity", "check")}) if valid else None
+        if valid and form.cleaned_data["format"] == "json":
+            response = JsonResponse(report, json_dumps_params={"indent": 2, "ensure_ascii": False})
+            response["Content-Disposition"] = f'attachment; filename="daamradar-{report["source"]}-catalog-quality.json"'
+            return response
+        query = request.GET.copy()
+        query.pop("page", None)
+        query["format"] = "html"
+        export = query.copy()
+        export["format"] = "json"
+        return TemplateResponse(request, "admin/catalog/catalog_quality.html", {
+            **self.admin_site.each_context(request), "title": "Catalog quality", "opts": self.model._meta,
+            "can_view_collection_health": can_view_collection_health(request.user),
+            "filter_form": form, "valid_filter": valid, "report": report,
+            "page_obj": Paginator(report["findings"], 25).get_page(request.GET.get("page")) if report else None,
+            "page_query": query.urlencode(), "export_query": export.urlencode(),
+        }, status=200 if valid else 400)
 
 
 class ProductSourceFilter(admin.SimpleListFilter):

@@ -1,0 +1,43 @@
+{% extends 'admin/base_site.html' %}{% load static tz %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-health.css' %}">{% endblock %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">Home</a> &rsaquo; <a href="{% url 'admin:catalog_product_changelist' %}">Products</a> &rsaquo; Catalog quality</div>{% endblock %}
+{% block content %}<div class="collection-health" data-catalog-quality>
+  <p>Review missing metadata, possible duplicates, identity conflicts and uncertain matches in the local catalog. This report reads stored records; it does not collect prices, merge products, reassign listings or change histories.</p>
+  <p><strong>Review findings are not automatic fixes.</strong> Confirm exact pack contents, brand, variant, packaging, barcode and original source evidence before editing a record. Name similarity is a heuristic score out of 100, not a confidence or accuracy percentage. Different sizes are not duplicates.</p>
+  <form method="get" class="health-filter">{{ filter_form.non_field_errors }}
+    {% for field in filter_form.visible_fields %}{{ field.errors }}{{ field.label_tag }} {{ field }}{% endfor %}
+    {{ filter_form.format }}<button type="submit" class="button">Apply filters</button><a href="{% url 'admin:catalog_quality' %}">Reset</a>
+  </form>
+  {% if not valid_filter %}<p>Choose valid filters to generate a report. No unfiltered findings are shown.</p>{{ filter_form.format.errors }}
+  {% else %}
+  <p>Catalog: <strong>{% if report.source == 'demo' %}Demo — fictional sample data{% else %}Collected{% endif %}</strong>. Snapshot: <time datetime="{{ report.as_of }}">{{ report.as_of }}</time> (ISO 8601 timestamp). <a href="?{{ export_query }}">Download this report as JSON</a></p>
+  <dl class="health-totals">
+    <div><dt>Products scanned / total</dt><dd>{{ report.counts.products_scanned }} / {{ report.counts.products_total }}</dd></div>
+    <div><dt>Listings scanned / total</dt><dd>{{ report.counts.listings_scanned }} / {{ report.counts.listings_total }}</dd></div>
+    <div><dt>Conflicts found</dt><dd>{{ report.by_severity.error|default:0 }}</dd></div>
+    <div><dt>Review findings</dt><dd>{{ report.by_severity.warning|default:0 }}</dd></div>
+  </dl>
+  {% if not report.complete %}<div class="errornote" data-quality-limited><strong>Partial report.</strong> A scan, pair-comparison or returned-findings limit was reached. Findings/counts cover only the evaluated records; an empty selection cannot establish a clean catalog.
+    <ul>{% for name, limited in report.limits.items %}{% if limited %}<li>{{ name|capfirst }} limit reached.</li>{% endif %}{% endfor %}</ul>
+  </div>{% endif %}
+  <p>Bounds: {{ report.bounds.products }} products, {{ report.bounds.listings }} listings, {{ report.bounds.pairs }} compatible-pair checks and {{ report.bounds.findings }} findings per filtered report. Scanned rows are ordered by ID. {{ report.counts.pairs_checked }} of {{ report.counts.pairs_possible }} compatible pairs in the scanned product set were checked.</p>
+  <p>Summary counts cover all checks on evaluated records before filters. Listing scans include inconsistent Demo/Collected flags in either direction, so those conflicts remain visible. Products and duplicate groups otherwise stay within the chosen catalog.</p>
+  <section aria-labelledby="quality-findings-heading"><h2 id="quality-findings-heading">Findings ({{ report.counts.findings_selected }} matching filters; {{ report.counts.findings_returned }} retained)</h2>
+    <p>25 findings per page. Large groups show at most {{ report.bounds.references_per_finding }} references of each record type. Scroll the table sideways on small screens.</p>
+    <div class="health-table-wrap" tabindex="0" role="region" aria-label="Catalog quality findings; scroll sideways on small screens"><table>
+      <thead><tr><th scope="col">Check / severity</th><th scope="col">Records to review</th><th scope="col">Evidence and next step</th></tr></thead><tbody>
+      {% for finding in page_obj %}<tr data-quality-finding="{{ finding.code }}">
+        <th scope="row">{{ finding.title }}<span class="health-status">{% if finding.severity == 'error' %}Conflict{% else %}Needs review{% endif %}</span><small>{{ finding.code }}</small></th>
+        <td>{% for product in finding.products %}<p><a href="{% url 'admin:catalog_product_change' product.id %}">{{ product.name }}</a> (#{{ product.id }}, {{ product.source }})</p>{% endfor %}
+          {% for listing in finding.listings %}<p><a href="{% url 'admin:catalog_retailerlisting_change' listing.id %}">{{ listing.title }}</a><br>{{ listing.retailer }} — listing #{{ listing.id }}, {{ listing.source }}</p>{% endfor %}
+          {% if finding.references_limited %}<p>References shortened: {{ finding.product_count }} product(s), {{ finding.listing_count }} listing(s) in this finding.</p>{% endif %}
+        </td>
+        <td class="health-error">{{ finding.detail }}{% if finding.evidence %}<dl>{% for key, value in finding.evidence.items %}<dt>{% if key == 'name_similarity' %}Guarded name similarity / 100{% elif key == 'stored_contents' %}Stored pack contents{% elif key == 'parsed_contents' %}Parsed title contents{% else %}{{ key|capfirst }}{% endif %}</dt><dd>{{ value }}</dd>{% endfor %}</dl>{% endif %}</td>
+      </tr>{% empty %}<tr><td colspan="3">No findings in this selection of the evaluated checks. This is not proof of product equivalence or complete catalog accuracy; inspect any scan limits and source evidence.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+    {% if page_obj.has_other_pages %}<nav class="health-pagination" aria-label="Catalog quality pages">{% if page_obj.has_previous %}<a href="?{{ page_query }}&amp;page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}<span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?{{ page_query }}&amp;page={{ page_obj.next_page_number }}">Next</a>{% endif %}</nav>{% endif %}
+  </section>
+  <p>{% if can_view_collection_health %}<a href="{% url 'admin:catalog_collection_health' %}">Collection health and source freshness</a>{% else %}Collection health and source freshness{% endif %} are reviewed separately. This identity report does not certify current stock, delivery coverage or matching accuracy.</p>
+  {% endif %}
+</div>{% endblock %}

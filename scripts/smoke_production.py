@@ -60,6 +60,10 @@ def main():
         command("manage.py", "seed_demo")
         command("manage.py", "collectstatic", "--noinput")
         manifest = json.loads((temporary / "staticfiles/staticfiles.json").read_text(encoding="utf-8"))["paths"]
+        quality = json.loads(command("manage.py", "catalog_quality", "--source", "demo", "--format", "json").stdout)
+        check(quality["complete"] and quality["counts"]["products_total"] == 12
+              and quality["counts"]["listings_total"] == 36 and not quality["findings"],
+              "Production catalog-quality command inspects demo identities without findings or writes")
 
         if database_url.startswith("sqlite:"):
             backup = temporary / "backup.sqlite3"
@@ -187,6 +191,9 @@ def main():
                     check(unresolved.status_code == 200 and unresolved.json()["items"][0]["observed_price"] is None
                           and not unresolved.json()["items"][0]["offers"], "Production unresolved targets cannot produce price alerts")
                     login = client.get(base + "/admin/login/", headers=headers, timeout=5)
+                    quality_page = client.get(base + "/admin/catalog/product/quality/?format=json", headers=headers, timeout=5, allow_redirects=False)
+                    check(quality_page.status_code == 302 and "/admin/login/" in quality_page.headers.get("Location", ""),
+                          "Production catalog-quality reports require admin authentication")
                     check(login.status_code == 200 and "Secure" in login.headers.get("Set-Cookie", ""), "Admin CSRF cookie uses Secure")
                     missing = client.get(base + "/does-not-exist/", headers=headers, timeout=5)
                     check(missing.status_code == 404 and "Traceback" not in missing.text, "Debug-free 404 response")

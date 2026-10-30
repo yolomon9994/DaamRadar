@@ -3,6 +3,7 @@
 {% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">Home</a> &rsaquo; <a href="{% url 'admin:catalog_retailer_changelist' %}">Retailers</a> &rsaquo; Collection health</div>{% endblock %}
 {% block content %}<div class="collection-health">
   <p>This page reads stored collection records. Opening it does not collect prices, change source settings, or start a refresh.</p>
+  <p><a class="button" href="{% url 'admin:catalog_quality' %}">Review catalog quality</a></p>
   <p><a class="button" href="{% url 'admin:catalog_import_preview' %}">Import reviewed catalog — preview batches</a></p>
   <section aria-labelledby="manual-refresh-heading"><h2 id="manual-refresh-heading">Manual price refresh</h2>
   {% if active_refresh %}<p>A collection request is queued or running. <a href="{% url 'admin:catalog_refresh_detail' active_refresh.pk %}">Open {{ active_refresh.get_kind_display|lower }} #{{ active_refresh.pk }}</a>. Another import or refresh cannot start until it is finalized.</p>

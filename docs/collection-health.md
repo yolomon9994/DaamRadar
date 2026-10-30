@@ -8,6 +8,8 @@ For an initial real catalog, choose **Import reviewed catalog — preview batche
 
 ## What the page shows
 
+For identity/metadata review, follow **Review catalog quality**, or open **Products → Catalog quality**. This separate [read-only report](catalog-quality.md) checks missing sizes/brands/categories, possible duplicates, barcodes, catalog-flag conflicts and uncertain matches. Collection freshness and access state remain on this collection-health page.
+
 - Per-retailer collected, fresh and stale listing counts, plus the latest listing check.
 - The last completed successful run and the latest attempted run. A successful run covers only its own selected URLs, not the retailer's entire catalog. Partial runs can still update some listing checks without replacing the last fully successful run.
 - Manual collection switches and adapter state. The global switch, source switch, validated source status and code-level adapter flag must all allow collection. A run marked `running` is shown separately and prevents another collection. This configuration view does not verify current robots rules, contact configuration, network access or retailer availability.

@@ -99,6 +99,7 @@ To follow a regular purchase, select **Watch price** on its card or detail page,
 - Read-only REST API, administration interface, SQLite default, and environment-based PostgreSQL configuration.
 - Evidence-based delivery-area comparisons: live winners require a shared scope and dated, source-linked evidence for each eligible observation. New imports clear old verification. Dated public delivery findings appear on the sources page; current listings remain unverified. See [delivery findings and validation](docs/delivery-areas.md).
 - Admin collection-health dashboard with per-source freshness, successful/latest runs, paused/running source state, a paginated stale-listing queue and recent failures/partial runs. It excludes demo data and requires the relevant model view/change permissions. See [dashboard access and behavior](docs/collection-health.md).
+- Read-only **Catalog quality** report in Products admin, with missing metadata, possible duplicates, barcode/pack/source conflicts, uncertain matches, filtered JSON downloads and a matching local command. Findings link to records for manual review; nothing is merged or collected. See [checks, limits and usage](docs/catalog-quality.md).
 - Public **Our sources** overview with dated collected/fresh/stale counts, source configuration and recorded outcomes, PKT check times and source-filtered browsing. Management links follow existing admin permissions; raw operator logs stay private. Viewing or reloading reads stored data only. See [public freshness behavior and validation](docs/public-source-health.md).
 - Admin-only manual price refresh with a separate finite local worker, persistent progress/audit links, stale-only reviewed URLs and database overlap protection. Requires explicit start permission and configured sources; viewing pages never starts collection. See [admin refresh and recovery](docs/admin-refresh.md).
 - Reviewed-batch imports from admin with missing/existing previews, account-bound signed approval, create-only ingestion and the same worker/overlap safeguards. Existing prices and histories are preserved. See [catalog import](docs/admin-catalog-import.md).
@@ -138,6 +139,18 @@ Product listings include guarded `price_change` metadata. Historical observation
 Demo/live flags are explicit in serialized results. Amounts are decimal strings, denominated in PKR. `best_price` excludes stale, out-of-stock, and unknown-availability offers. Live `has_comparison` requires multiple retailers with evidence for the same delivery scope for every eligible observation; matching area text alone is insufficient. `has_unverified_areas` and `has_mixed_areas` expose area caveats. Listings include `area_is_verified`, `delivery_area_key`, `area_evidence_url` and `area_verified_at`; `comparison_area` describes the qualifying area. APIs do not accept anonymous writes. Anonymous API traffic is limited to 120 requests/minute per application cache/IP; use shared caching and correctly configured proxies for a multi-process production deployment.
 
 ## Checks
+
+For catalog review, open **Admin → Products → Catalog quality**, or run these read-only commands:
+
+```powershell
+.\.venv\Scripts\python.exe manage.py catalog_quality
+.\.venv\Scripts\python.exe manage.py catalog_quality --source demo
+.\.venv\Scripts\python.exe manage.py catalog_quality --severity error --format json
+```
+
+Collected data is the default; Demo must be selected explicitly. Findings are review candidates, and any scan limits are reported. The report does not certify matching accuracy or change records. See [catalog-quality rules](docs/catalog-quality.md).
+
+Run the project checks:
 
 ```powershell
 .\.venv\Scripts\python.exe manage.py test

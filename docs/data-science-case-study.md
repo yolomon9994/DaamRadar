@@ -42,13 +42,15 @@ Run offline validation:
 
 This uses in-memory SQLite, disables collection by default and rejects unmocked requests HTTP calls. It does not modify the local catalog. The reviewed manual collection path is documented separately in the [collection runbook](collection-workflow.md); a reviewer does not need to enable it to explore the application or source-format tests.
 
-## Next analytical milestones
+## Analytical ideas outside the v1 scope
+
+Analysis export/notebook work and a measured matching benchmark are skipped for the current v1 roadmap at the author's request. The ideas below are optional future work, not release requirements. The implemented [catalog-quality report](catalog-quality.md) supports deterministic metadata/identity review; it is not a matching benchmark or accuracy measurement.
 
 1. **Reproducible analysis export and EDA.** Export only relevant catalog/observation fields into local analysis files, excluding Django accounts and operational secrets. Document schema, provenance, demo/live separation and timestamps. Analyze coverage, missingness, stock/freshness and observed price differences within compatible products. Use explicit as-of times, show sample sizes and retain delivery-area caveats. Add a small pandas analysis workflow and exportable charts once this path exists.
 2. **Measured matching evaluation.** Curate independently reviewed matching/non-matching title pairs, preserve their provenance and include difficult size/variant/packaging negatives. Split evaluation by product identity so aliases for the same product do not leak across development and held-out evaluation. Compare simple baselines against the existing rules-plus-fuzzy method. Report precision, recall, F1, false merges, missed matches, ambiguity/abstention and error examples. Treat a small or synthetic-only benchmark as limited evidence.
 3. **A concise findings report.** Connect each chart or metric to a specific question, explain cleaning and eligibility choices, and state what the data cannot establish. Add screenshots, exact reproduction commands and actual measured results to the repository. Consider forecasting or other machine learning only after adequate repeated observations and an evaluation design exist.
 
-These are future milestones. There is no pandas notebook, statistical model, forecast or held-out matching benchmark in the current implementation.
+These ideas are outside the current v1 scope. There is no pandas notebook, statistical model, forecast or held-out matching benchmark in the current implementation.
 
 ## Describing the project on a CV
 
