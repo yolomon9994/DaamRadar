@@ -6,6 +6,7 @@
   const transfer = window.DaamRadarListTransfer;
   const page = document.querySelector("[data-shopping-list]");
   const feedback = document.querySelector("[data-list-feedback]");
+  let feedbackReturnFocus;
   let storageWarning = "";
   let state = {demo: [], live: []};
   let budgets = {demo: null, live: null};
@@ -44,6 +45,7 @@
 
   function notify(message, catalog) {
     if (!feedback) return;
+    if (!feedback.contains(document.activeElement)) feedbackReturnFocus = document.activeElement;
     feedback.hidden = false;
     feedback.replaceChildren(document.createTextNode(message + " "));
     if (validSource(catalog)) {
@@ -52,6 +54,15 @@
       link.textContent = "View list";
       feedback.append(link);
     }
+    const dismiss = document.createElement("button");
+    dismiss.type = "button";
+    dismiss.textContent = "Dismiss";
+    dismiss.setAttribute("aria-label", "Dismiss shopping-list message");
+    dismiss.addEventListener("click", () => {
+      feedback.hidden = true;
+      if (feedbackReturnFocus?.isConnected) feedbackReturnFocus.focus();
+    });
+    feedback.append(dismiss);
   }
 
   function save() {
@@ -108,7 +119,13 @@
       refresh(event.key !== budgetKey);
     }
   });
-  if (!page) return;
+  if (!page) {
+    window.addEventListener("pageshow", (event) => {
+      if (!event.persisted) return;
+      try { if (localStorage.getItem(key) !== storedListValue) { state = load(); updateCounts(); } } catch (_) { /* Keep page-only changes. */ }
+    });
+    return;
+  }
 
   const list = page.querySelector("[data-list-items]");
   const content = page.querySelector("[data-list-content]");
@@ -179,10 +196,19 @@
   const pickedUp = new Set();
   let printData = null;
   let printRetailer = null;
+  const snapshot = window.DaamRadarSnapshot.create(() => {
+    if (controller) controller.abort();
+    revision += 1;
+    estimates.replaceChildren();
+    estimates.removeAttribute("aria-busy");
+    invalidatePrint("Estimate snapshot expired. Refresh estimates before printing prices or budget results.");
+    message.textContent = "Estimate snapshot expired. Refresh estimates to reload local eligibility. Your saved items, quantities and budget are kept.";
+  });
   document.body.classList.add("shopping-list-page");
   const statusLabels = {
     included: "Included", missing: "Not listed by this retailer", product_unavailable: "Product removed or unavailable in this catalog",
     stale: "Stale observation — excluded", availability_unknown: "Stock unknown — excluded",
+    check_time_invalid: "Check time needs review — excluded",
     out_of_stock: "Out of stock — excluded", area_ambiguous: "Multiple delivery areas — choose an area before estimating",
   };
   const money = (value) => "Rs. " + Number(value).toLocaleString("en-PK", {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -270,6 +296,7 @@
   }
 
   function renderPrintSheet() {
+    snapshot.check();
     printSheet.replaceChildren();
     if (!printData) return;
     const retailer = printData.retailers.find((row) => row.slug === printRetailer);
@@ -474,7 +501,7 @@
         if (line.line_total !== null) {
           row.append(element("span", money(line.unit_price) + " each · " + money(line.line_total) + " total"));
           row.append(element("span", line.standard_unit_price?.display || "Unit price unavailable", "standard-unit-price"));
-          const time = element("time", "Checked " + new Date(line.last_checked).toLocaleString() + " (your local time)");
+          const time = element("time", "Checked " + printTime(line.last_checked));
           time.dateTime = line.last_checked;
           row.append(time, element("span", line.delivery_area || "Area unspecified"));
         }
@@ -486,6 +513,8 @@
     });
   }
   async function refresh(rebuild) {
+    snapshot.clear();
+    const started = performance.now();
     if (controller) controller.abort();
     const requestRevision = ++revision;
     invalidatePrint("Estimates are not ready. Load valid estimates before printing a shopping checklist.");
@@ -519,6 +548,7 @@
       if (!response.ok) throw new Error("Estimate request failed");
       const data = await response.json();
       if (requestRevision !== revision) return;
+      if (!snapshot.arm(data, started)) return;
       let metadataChanged = false;
       data.items.forEach((item) => {
         const saved = state[source].find((entry) => entry.slug === item.slug);
@@ -573,6 +603,17 @@
       return persisted;
     }});
   setupListSearch();
+  window.addEventListener("pageshow", (event) => {
+    if (!event.persisted) return;
+    let changed = false;
+    try { changed = localStorage.getItem(key) !== storedListValue; } catch (_) { /* Page-only list. */ }
+    if (changed) { state = load(); updateCounts(); invalidateUndo(); }
+    try {
+      const savedBudgets = JSON.parse(localStorage.getItem(budgetKey) || '{"demo":null,"live":null}');
+      if (savedBudgets?.demo !== budgets.demo || savedBudgets?.live !== budgets.live) { budgets = loadBudgets(); renderBudget(); }
+    } catch (_) { /* Keep page-only budgets and drafts if storage cannot be read. */ }
+    refresh(changed);
+  });
   refresh(true);
 
   function setupListSearch() {

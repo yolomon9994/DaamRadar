@@ -64,6 +64,8 @@ The response includes `source`, the selected product descriptor/slug, `as_of`, t
 
 ## Validation, 30 October 2026
 
+The later [usability/expiry pass](usability.md) adds a nested `snapshot` object (`as_of`, `expires_at`, `max_age_seconds`) to the API, and a dated reload notice to the page. The browser hides comparison rows/highlights when that snapshot expires, including after tab suspension; it does not automatically collect or refetch prices.
+
 All **338 offline tests passed on SQLite and PostgreSQL 17.11**. Seventeen new tests cover exact family membership, multipack contents, liquids/mass/pieces, unknown or inconsistent metadata, listing-title drift, stale/future/stock/cutoff rules, shared/conflicting/unverified delivery scopes including non-Latin labels, exact ties and rounded overlaps, sub-paisa rates, barcode conflicts, Demo separation, bounds, empty states, methods/sorting/cache/links, two-query summaries, read-only behavior, escaping and safe source links.
 
 **23 Chrome checks** passed at 1280px and 390px, covering card/detail entry points, total multipack contents, explicit Demo highlights and disabled purchase links, contained and keyboard-accessible table scrolling, sorting, exact-pack shopping-list additions, flavor exclusion, timestamp/stock warnings, public API behavior, verified/unverified scope handling, empty states and operation without page JavaScript. Browser fixtures and temporary accounts/data did not alter the development catalog; retailer HTTP was blocked.

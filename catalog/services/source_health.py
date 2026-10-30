@@ -4,7 +4,8 @@ from datetime import timedelta
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator, validate_email
-from django.db.models import Count, Exists, Max, OuterRef, Q, Subquery
+from django.db.models import Count, Exists, Max, Min, OuterRef, Q, Subquery
+from catalog.services.snapshots import snapshot_metadata
 from django.utils import timezone
 
 from catalog.models import Retailer, RetailerListing, ScrapeRun
@@ -45,6 +46,8 @@ def source_health(*, now=None):
         stale_count=Count("listings", filter=live & Q(listings__last_checked__lt=cutoff)),
         future_count=Count("listings", filter=live & Q(listings__last_checked__gt=as_of)),
         last_checked=Max("listings__last_checked", filter=live & valid_time),
+        earliest_fresh=Min("listings__last_checked", filter=live & fresh),
+        earliest_future=Min("listings__last_checked", filter=live & Q(listings__last_checked__gt=as_of)),
         latest_outcome=Subquery(latest.values("status")[:1]),
         latest_attempt_at=Subquery(latest.values("started_at")[:1]),
         last_success_at=Subquery(successful.values("completed_at")[:1]),
@@ -82,4 +85,6 @@ def source_health(*, now=None):
     products = RetailerListing.objects.filter(is_demo=False, product__is_demo=False).aggregate(
         count=Count("product_id", distinct=True))["count"]
     return {"source_rows": rows, "totals": totals, "product_count": products,
+            "snapshot": snapshot_metadata((checked for row in rows for checked in
+                (row["retailer"].earliest_fresh, row["retailer"].earliest_future) if checked is not None), now=as_of),
             "as_of": as_of, "cutoff": cutoff, "stale_hours": settings.PRICE_STALE_HOURS}

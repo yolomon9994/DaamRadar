@@ -8,9 +8,9 @@
   const source = host?.dataset.source;
   let warning = "";
   let state = {demo: [], live: []};
+  let storedWatchValue = null;
   let revision = 0;
   let controller;
-  let expiryTimer;
   let updateBackup = () => {};
   let unreadableTargets = false;
   const drafts = new Map();
@@ -26,6 +26,7 @@
       warning = "";
       unreadableTargets = false;
       const raw = localStorage.getItem(key);
+      storedWatchValue = raw;
       if (raw === null) return {demo: [], live: []};
       const saved = JSON.parse(raw);
       const next = {};
@@ -48,7 +49,12 @@
     }
   }
   function save() {
-    try { localStorage.setItem(key, JSON.stringify(state)); warning = ""; unreadableTargets = false; return true; }
+    try {
+      const value = JSON.stringify(state);
+      localStorage.setItem(key, value);
+      storedWatchValue = value;
+      warning = ""; unreadableTargets = false; return true;
+    }
     catch (_) { warning = "Browser storage is unavailable or full. Target changes last only on this page."; return false; }
   }
   function counts() {
@@ -63,6 +69,10 @@
   counts();
   if (!host) {
     window.addEventListener("storage", (event) => { if (event.key === key || event.key === null) { state = load(); counts(); } });
+    window.addEventListener("pageshow", (event) => {
+      if (!event.persisted) return;
+      try { if (localStorage.getItem(key) !== storedWatchValue) { state = load(); counts(); } } catch (_) { /* Page-only targets. */ }
+    });
     return;
   }
   if (control) control.hidden = false;
@@ -82,10 +92,15 @@
   }
   function stopRequest() {
     if (controller) controller.abort();
-    clearTimeout(expiryTimer);
+    snapshot.clear();
     revision += 1;
     host.removeAttribute("aria-busy");
   }
+  const snapshot = window.DaamRadarSnapshot.create(() => {
+    stopRequest();
+    clearResults("Observations may now be stale. Check targets again before using these results.");
+    say("Target snapshot expired. Check again to reload eligibility from the local database.");
+  });
   function saveTarget(slug, value, name, size) {
     const target = targetPrice(value);
     if (!target) return false;
@@ -192,6 +207,7 @@
   }
   async function refresh() {
     stopRequest();
+    const started = performance.now();
     const entries = selected();
     if (!entries.length) { clearResults(""); say(""); return; }
     const requestRevision = revision;
@@ -207,6 +223,7 @@
       if (!response.ok) throw new Error("Target check failed");
       const data = await response.json();
       if (requestRevision !== revision) return;
+      if (!snapshot.arm(data, started)) return;
       let metadataChanged = false;
       data.items.forEach((item) => {
         const saved = state[source].find((entry) => entry.slug === item.slug);
@@ -221,9 +238,6 @@
       data.items.forEach(showResult);
       const checked = data.items.filter((item) => !drafts.has(item.slug));
       say(`${checked.filter((item) => item.status === "target_met").length} of ${checked.length} saved targets met. Checked locally ${time(data.evaluated_at)}. This is a snapshot of stored observations.${drafts.size ? " Save edited targets to check them." : ""}`);
-      if (data.expires_at) expiryTimer = setTimeout(() => {
-        stopRequest(); clearResults("Observations may now be stale. Check targets again before using these results."); say("Target snapshot expired. Check again to reload eligibility from the local database.");
-      }, Math.min(2147483647, Math.max(0, new Date(data.expires_at).getTime() - Date.now() + 1)));
     } catch (error) {
       if (requestRevision !== revision) return;
       clearResults("Target status is unavailable until a check succeeds.");
@@ -242,10 +256,16 @@
     if (event.key !== key && event.key !== null) return;
     state = load(); drafts.clear(); counts(); render(); refresh();
   });
+  window.addEventListener("pageshow", (event) => {
+    if (!event.persisted) return;
+    try { if (localStorage.getItem(key) !== storedWatchValue) { state = load(); drafts.clear(); } } catch (_) { /* Keep page-only targets. */ }
+    counts(); render(); refresh();
+  });
   if (page) updateBackup = window.DaamRadarPreferencesBackup.mount({page, source,
     read: () => state, hasDrafts: () => drafts.size > 0, unreadable: () => unreadableTargets,
     applied: (next) => {
       state = next;
+      try { storedWatchValue = localStorage.getItem(key); } catch (_) { /* Restore already verified storage. */ }
       warning = "";
       unreadableTargets = false;
       drafts.clear();

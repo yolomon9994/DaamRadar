@@ -3,7 +3,7 @@
   --green:#174d39;
   --green-light:#e9efdf;
   --cream:#faf8f2;
-  --muted:#6e776e;
+  --muted:#596759;
   --border:#e1e5db;
   --orange:#be613c;
   --serif:Georgia,'Times New Roman',serif;
@@ -2284,6 +2284,22 @@ h3 {
   size:A4 portrait;
   margin:12mm;
 }
+/* Readable labels and reachable controls across planning and comparison pages. */
+.snapshot-notice {display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding-top:16px; padding-bottom:16px; background:var(--cream); border-bottom:1px solid var(--border);}
+.snapshot-notice p {flex:1 1 300px; margin:0; font-size:13px;}
+.snapshot-expired .snapshot-notice {border:2px solid var(--green);}
+[hidden] {display:none!important;}
+.product-brand, .product-subtitle, .sample-tag, .price-summary > div > span,
+.offer-name small, .offer-price strong, .product-card .standard-unit-price,
+.price-change, .availability, .stale-tag, .comparison-table small,
+.pack-table small, .pack-table time, .filter-bar label, .filter-bar select,
+.offer-filter-controls label {font-size:12px!important;}
+button, .primary-button, .button-small, .list-action {min-height:44px;}
+.source-switch a, .watch-link, .compare-link, .shopping-nav {min-height:32px; padding-top:6px; padding-bottom:6px;}
+summary:focus-visible, [tabindex="0"]:focus-visible {outline:3px solid var(--green); outline-offset:3px;}
+.shopping-feedback {display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:12px;}
+.shopping-feedback button {background:transparent; color:white; border:1px solid white; border-radius:6px; padding:4px 10px;}
+
 @media print {
   body.shopping-list-page {
     page:shopping-checklist;

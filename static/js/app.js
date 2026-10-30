@@ -4,13 +4,14 @@
 document.querySelectorAll("form[role='search']").forEach((form) => {
   form.addEventListener("submit", () => {
     const button = form.querySelector("button");
+    if (!button.dataset.readyLabel) button.dataset.readyLabel = button.textContent;
     button.textContent = "Finding matches…";
     button.setAttribute("aria-busy", "true");
   });
 });
 window.addEventListener("pageshow", () => {
   document.querySelectorAll("form[role='search'] button[aria-busy]").forEach((button) => {
-    button.textContent = "Compare prices ↗";
+    button.textContent = button.dataset.readyLabel || "Compare prices ↗";
     button.removeAttribute("aria-busy");
   });
 });

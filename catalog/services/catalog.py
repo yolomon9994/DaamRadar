@@ -10,6 +10,7 @@ from catalog.matching.normalization import identify, normalize_text
 from catalog.models import Product, RetailerListing
 from catalog.search_filters import filters_active, offer_filters
 from catalog.services.unit_pricing import standard_unit_price
+from catalog.services.snapshots import snapshot_metadata
 
 SORTS = {"relevance": "Recommended", "price_asc": "Lowest price", "price_desc": "Highest price"}
 
@@ -24,6 +25,7 @@ def decorate(product, *, now=None):
     product.offers = list(product.listings.all())
     # A shared label or retailer-wide delivery claim does not verify a price's area.
     as_of = now if now is not None else timezone.now()
+    product.snapshot = snapshot_metadata((o.last_checked for o in product.offers), now=as_of)
     cutoff = as_of - timedelta(hours=settings.PRICE_STALE_HOURS)
     eligible = [o for o in product.offers if o.is_demo == product.is_demo
                 and o.availability == "in_stock" and cutoff <= o.last_checked <= as_of]
@@ -50,7 +52,7 @@ def decorate(product, *, now=None):
     return product
 
 
-def search_catalog(params, *, filters=None, now=None):
+def search_catalog(params, *, filters=None, now=None, decorate_results=True):
     filters = offer_filters(params) if filters is None else filters
     as_of = now if now is not None else timezone.now()
     cutoff = as_of - timedelta(hours=settings.PRICE_STALE_HOURS)
@@ -86,7 +88,8 @@ def search_catalog(params, *, filters=None, now=None):
         else:
             candidates = products
         products = candidates
-    products = products.prefetch_related(Prefetch("listings", queryset=offers))
+    if decorate_results:
+        products = products.prefetch_related(Prefetch("listings", queryset=offers))
     found = []
     normalized_query = normalize_text(query)
     query_identity = identify(query)
@@ -103,19 +106,20 @@ def search_catalog(params, *, filters=None, now=None):
             continue
         if query_identity.packaging and query_identity.packaging != identify(product.canonical_name).packaging:
             continue
-        product = decorate(product, now=as_of)
-        product.has_offer_filters = filters_active(filters)
-        for offer in product.offers:
-            offer.matches_offer_filters = (all((
-                not filters["fresh"] or cutoff <= offer.last_checked <= as_of,
-                not filters["in_stock"] or offer.availability == "in_stock",
-                filters["min_price"] is None or offer.current_price >= filters["min_price"],
-                filters["max_price"] is None or offer.current_price <= filters["max_price"],
-            )) if product.has_offer_filters else None)
+        if decorate_results:
+            product = decorate(product, now=as_of)
+            product.has_offer_filters = filters_active(filters)
+            for offer in product.offers:
+                offer.matches_offer_filters = (all((
+                    not filters["fresh"] or cutoff <= offer.last_checked <= as_of,
+                    not filters["in_stock"] or offer.availability == "in_stock",
+                    filters["min_price"] is None or offer.current_price >= filters["min_price"],
+                    filters["max_price"] is None or offer.current_price <= filters["max_price"],
+                )) if product.has_offer_filters else None)
         product.relevance = score
         found.append(product)
     sort = params.get("sort", "relevance")
-    if sort in {"price_asc", "price_desc"}:
+    if decorate_results and sort in {"price_asc", "price_desc"}:
         found.sort(key=lambda p: (p.sort_price is None, (p.sort_price or Decimal(0)) * (-1 if sort == "price_desc" else 1), p.canonical_name))
     else:
         found.sort(key=lambda p: (-p.relevance, p.canonical_name))
@@ -127,8 +131,9 @@ def search_suggestions(params):
     if len(params.get("q", "").strip()) < 2:
         return []
     # Same bounded matching, identity/size guards and offer filters as full search.
-    return search_catalog({**{key: value for key, value in params.items()}, "sort": "relevance"}, filters=filters)[:6]
+    return search_catalog({**{key: value for key, value in params.items()}, "sort": "relevance"}, filters=filters, decorate_results=False)[:6]
 
 
 def get_product_queryset():
-    return Product.objects.select_related("category").prefetch_related("listings__retailer")
+    return Product.objects.select_related("category").prefetch_related(
+        Prefetch("listings", queryset=RetailerListing.objects.select_related("retailer")))

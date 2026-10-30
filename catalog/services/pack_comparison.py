@@ -15,6 +15,7 @@ from catalog.matching.normalization import identify, normalize_text
 from catalog.models import Product, RetailerListing
 from catalog.services.list_transfer import product_descriptor
 from catalog.services.unit_pricing import BASES, standard_unit_price
+from catalog.services.snapshots import snapshot_metadata
 
 CANDIDATE_LIMIT = 1000
 PRODUCT_LIMIT = 30
@@ -200,6 +201,7 @@ def pack_comparison(reference, *, sort="size", now=None):
             del row[internal]
     dimensions = {dimension(p) for p in products}
     return {"source": "demo" if reference.is_demo else "live", "reference": product_descriptor(reference),
+            "snapshot": snapshot_metadata((o.last_checked for o in offers), now=as_of),
             "reference_slug": reference.slug, "as_of": as_of.isoformat(), "stale_hours": settings.PRICE_STALE_HOURS,
             "sort": sort, "rows": rows, "displayed_product_count": len(products),
             "alternative_pack_count": len(dimensions - {dimension(reference)}), "limited": bool(notice),

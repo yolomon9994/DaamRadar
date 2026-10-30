@@ -97,6 +97,7 @@ class SearchSuggestions(APIView):
 
 
 @method_decorator(never_cache, name="dispatch")
+@method_decorator(never_cache, name="dispatch")
 class ProductList(ListAPIView):
     serializer_class = ProductSerializer
     pagination_class = CatalogPagination
@@ -114,6 +115,7 @@ class ProductList(ListAPIView):
         return super().get_serializer(*args, **kwargs)
 
 
+@method_decorator(never_cache, name="dispatch")
 class ProductDetail(RetrieveAPIView):
     serializer_class = ProductSerializer
     lookup_field = "slug"

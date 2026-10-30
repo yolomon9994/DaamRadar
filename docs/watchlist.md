@@ -19,7 +19,7 @@ Eligible retailer observations are listed alphabetically, with their individual 
 
 Demo matches use fictional observations and remain labeled. Stale, out-of-stock, unknown-stock and future-dated observations cannot trigger an alert. Products without observations, removed products and wrong-catalog references remain visible with an unavailable explanation. Excluded observations can show their last stored check time, without contributing a target-match price. Unknown product sizes do not prevent checking an exact known pack price, but no standard-unit rate is calculated.
 
-Each successful check shows its local evaluation time separately from retailer check times. Results are snapshots. When the earliest eligible observation reaches its freshness expiry, the browser clears the displayed result states and asks for another check; it does not fetch automatically. Pending/failed checks clear previous results and retain targets. Freshness only describes stored observations: retailer stock, address coverage, delivery fees and final checkout prices still need confirmation.
+Each successful check shows its local evaluation time separately from retailer check times. Results are snapshots. They expire within five minutes, or earlier when an observation reaches its freshness boundary or a future timestamp becomes current. The browser clears result states and asks for another check; it does not fetch automatically. Focus, visibility and history events recheck expiry, with monotonic elapsed time preventing a backward clock change from prolonging a snapshot. Pending/failed checks clear previous results and retain targets. Freshness only describes stored observations: retailer stock, address coverage, delivery fees and final checkout prices still need confirmation. See [shared snapshot rules and checks](usability.md).
 
 ## Browser storage
 
@@ -37,7 +37,7 @@ GET /api/watchlist/?source=demo&item=demo-olpers-milk-1l:325.00
 
 Repeat `item=slug:target` for up to 50 unique products. `source` is `demo` (default) or `live`. The API accepts positive decimal PKR targets with up to ten integer digits and two fractional digits, without leading zeroes except `0.xx`. It rejects malformed amounts, duplicates, wrong source values and more than 50 items with HTTP 400. An empty list returns empty `items`. Optional repeated `unresolved=slug` values must belong to the submitted items; these entries are excluded from product lookup and cannot produce price alerts, even if a local slug collides. POST and other writes are unsupported. Responses use `Cache-Control: no-store` and the normal anonymous API throttle.
 
-The response has `source`, `currency`, `evaluated_at`, nullable `expires_at`, and `items`. Each item includes:
+The response has `source`, `currency`, `evaluated_at`, `as_of`, `expires_at`, `max_age_seconds` (300), and `items`. Even an unavailable/empty result has a finite recheck deadline. Each item includes:
 
 - `slug`, normalized `target`, `available`, current nullable `name`/`size` and nullable portable `product` identity (no prices).
 - `status`: `target_met`, `above_target`, `stale`, `out_of_stock`, `availability_unknown`, `not_listed`, `product_unavailable` or `unavailable` (invalid observation time).

@@ -8,6 +8,7 @@ from django.utils import timezone
 from catalog.models import Product, RetailerListing
 from catalog.services.unit_pricing import standard_unit_price
 from catalog.services.list_transfer import product_descriptor
+from catalog.services.snapshots import snapshot_metadata
 
 
 def check_targets(items, source, unresolved=()):
@@ -18,7 +19,7 @@ def check_targets(items, source, unresolved=()):
     offers = defaultdict(list)
     for offer in RetailerListing.objects.filter(product__in=products.values(), is_demo=demo).select_related("retailer").order_by("retailer__name", "pk"):
         offers[offer.product_id].append(offer)
-    results, expiries = [], []
+    results = []
     for slug, target in items:
         product = products.get(slug)
         observations = offers[product.pk] if product else []
@@ -46,7 +47,6 @@ def check_targets(items, source, unresolved=()):
         for offer in eligible:
             verified = offer.area_is_verified
             scopes.add(("verified", offer.delivery_area_key) if verified else ("label", offer.delivery_area.strip()))
-            expiries.append(offer.last_checked + window)
             rows.append({"retailer": offer.retailer.name, "price": format(offer.current_price, ".2f"),
                          "meets_target": offer.current_price <= target, "last_checked": offer.last_checked.isoformat(),
                          "delivery_area": offer.delivery_area, "area_is_verified": verified})
@@ -59,4 +59,4 @@ def check_targets(items, source, unresolved=()):
                         "has_unverified_areas": not demo and any(not o.area_is_verified for o in eligible),
                         "has_mixed_areas": len(scopes) > 1, "offers": rows})
     return {"source": source, "currency": "PKR", "evaluated_at": now.isoformat(),
-            "expires_at": min(expiries).isoformat() if expiries else None, "items": results}
+            **snapshot_metadata((o.last_checked for group in offers.values() for o in group), now=now), "items": results}

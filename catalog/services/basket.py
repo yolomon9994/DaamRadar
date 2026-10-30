@@ -9,6 +9,7 @@ from django.utils import timezone
 from catalog.models import Product, Retailer, RetailerListing
 from catalog.services.list_transfer import product_descriptor
 from catalog.services.unit_pricing import standard_unit_price
+from catalog.services.snapshots import snapshot_metadata
 
 
 def money(value):
@@ -34,6 +35,7 @@ def estimate_basket(items, source, unresolved=(), budget=None):
                    "product": product_descriptor(products[slug]) if slug in products else None,
                    "available": slug in products} for slug, quantity in items],
         "retailers": [],
+        **snapshot_metadata((o.last_checked for group in offers.values() for o in group), now=checked_at),
     }
     for retailer in retailers:
         lines, subtotal, scopes = [], Decimal("0"), set()
@@ -41,7 +43,7 @@ def estimate_basket(items, source, unresolved=(), budget=None):
         for slug, quantity in items:
             product = products.get(slug)
             candidates = offers[(retailer.pk, product.pk)] if product else []
-            fresh = [o for o in candidates if o.last_checked >= cutoff]
+            fresh = [o for o in candidates if cutoff <= o.last_checked <= checked_at]
             eligible = [o for o in fresh if o.availability == "in_stock"]
             chosen = None
             if eligible:
@@ -58,7 +60,7 @@ def estimate_basket(items, source, unresolved=(), budget=None):
             elif not candidates:
                 status = "missing" if product else "product_unavailable"
             elif not fresh:
-                status = "stale"
+                status = "check_time_invalid" if any(o.last_checked > checked_at for o in candidates) else "stale"
             elif any(o.availability == "unknown" for o in fresh):
                 status = "availability_unknown"
             else:

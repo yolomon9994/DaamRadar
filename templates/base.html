@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="{% static 'vendor/bootstrap.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <script src="{% static 'js/app.js' %}" defer></script>
+  <script src="{% static 'js/snapshot.js' %}" defer></script>
   <script src="{% static 'js/list-transfer.js' %}" defer></script>
   <script src="{% static 'js/shopping-list.js' %}" defer></script>
   <script src="{% static 'js/preferences-backup.js' %}" defer></script>
@@ -24,7 +25,7 @@
     <div class="planning-nav"><a class="shopping-nav" href="{% url 'shopping-list' %}{% if source %}?source={{ source }}{% endif %}">Shopping list <span data-list-total>0</span></a><a class="shopping-nav" href="{% url 'watchlist' %}{% if source %}?source={{ source }}{% endif %}">Watchlist <span data-watch-total>0</span></a></div>
     <span class="country-tag"><span aria-hidden="true">☾</span> Pakistan <small>PKR</small></span>
   </nav></header>
-  <main id="main">{% block content %}{% endblock %}</main>
+  <main id="main" tabindex="-1"{% if snapshot %} data-observation-snapshot data-snapshot-as-of="{{ snapshot.as_of }}" data-snapshot-expires="{{ snapshot.expires_at }}"{% endif %}>{% if snapshot %}{% include 'catalog/includes/snapshot_notice.html' %}{% endif %}{% block content %}{% endblock %}</main>
   <p class="shopping-feedback" data-list-feedback role="status" aria-live="polite" hidden></p>
   <footer class="site-footer"><div class="container footer-top"><a class="brand" href="{% url 'home' %}">Daam<span>Radar</span>.</a><p>A smarter start to your grocery run.</p><a href="{% url 'sources' %}">Data & source transparency ↗</a></div><div class="container footer-bottom"><span>Built for Pakistan. Prices in PKR.</span><span>Listed prices only. Delivery, location, and checkout charges may differ.</span></div></footer>
 </body></html>

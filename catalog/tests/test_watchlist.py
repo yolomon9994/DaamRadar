@@ -106,12 +106,12 @@ class WatchlistTests(TestCase):
         RetailerListing.objects.filter(pk=self.offer.pk).update(last_checked=now - timedelta(hours=47))
         with patch("catalog.services.watchlist.timezone.now", return_value=now):
             data = check_targets([("real-milk", Decimal("510"))], "live")
-        self.assertEqual(data["expires_at"], (now + timedelta(hours=1)).isoformat())
+        self.assertEqual(data["expires_at"], (now + timedelta(minutes=5)).isoformat())
         self.assertEqual(data["evaluated_at"], now.isoformat())
         with patch("catalog.services.watchlist.timezone.now", return_value=now + timedelta(hours=2)):
             data = check_targets([("real-milk", Decimal("510"))], "live")
         self.assertEqual(data["items"][0]["status"], "stale")
-        self.assertIsNone(data["expires_at"])
+        self.assertEqual(data["expires_at"], (now + timedelta(hours=2, minutes=5)).isoformat())
 
     def test_api_bounds_duplicates_target_format_and_source_validation(self):
         invalid = ["0", "-1", "0.001", "NaN", "Infinity", "1e3", "true", "10000000000", "1.234", "01", "1\n", "", ".50"]
@@ -129,7 +129,7 @@ class WatchlistTests(TestCase):
     def test_api_empty_and_unsupported_write(self):
         data = self.client.get("/api/watchlist/").json()
         self.assertEqual(data["items"], [])
-        self.assertIsNone(data["expires_at"])
+        self.assertIsNotNone(data["expires_at"])
         self.assertEqual(self.client.post("/api/watchlist/", {}).status_code, 405)
 
     def test_checks_are_read_only_and_make_no_retailer_requests(self):

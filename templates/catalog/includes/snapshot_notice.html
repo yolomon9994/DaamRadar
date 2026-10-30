@@ -1,0 +1,6 @@
+{% load catalog_tags %}
+<div class="snapshot-notice container">
+  <p data-snapshot-status role="status" aria-live="polite">Local snapshot: <time datetime="{{ snapshot.as_of }}">{{ snapshot.as_of|observation_time }}</time>. Eligibility expires by <time datetime="{{ snapshot.expires_at }}">{{ snapshot.expires_at|observation_time }}</time>; prices and stock still need retailer confirmation.</p>
+  <a class="text-link" data-snapshot-reload href="{{ request.get_full_path }}">Reload snapshot</a>
+  <noscript><p>Automatic expiry needs JavaScript. Reload before using these dated observations.</p></noscript>
+</div>

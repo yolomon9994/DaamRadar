@@ -113,7 +113,7 @@ def main():
                           "Production public freshness snapshot excludes demo and operator controls")
                     source_post = client.post(base + "/sources/", headers=headers, timeout=5)
                     check(source_post.status_code in (403, 405), "Public source page rejects collection POSTs")
-                    for asset in ("css/app.css", "js/app.js", "js/list-transfer.js", "js/shopping-list.js", "js/preferences-backup.js", "js/watchlist.js"):
+                    for asset in ("css/app.css", "js/app.js", "js/snapshot.js", "js/list-transfer.js", "js/shopping-list.js", "js/preferences-backup.js", "js/watchlist.js"):
                         path = "/static/" + manifest[asset]
                         check(path in home.text, f"Homepage references hashed {asset}")
                         response = client.get(base + path, headers=headers, timeout=5)

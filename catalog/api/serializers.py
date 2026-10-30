@@ -171,6 +171,7 @@ class ListingSerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
+    snapshot = serializers.JSONField(read_only=True)
     category = serializers.CharField(source="category.name", default=None)
     size = serializers.CharField(source="size_label")
     best_price = serializers.DecimalField(max_digits=12, decimal_places=2, allow_null=True, read_only=True)
@@ -183,7 +184,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ["id", "slug", "canonical_name", "brand", "category", "quantity", "unit", "pack_count", "size", "image", "is_demo", "best_price", "standard_unit_price", "has_mixed_areas", "has_unverified_areas", "has_comparison", "comparison_area", "listings"]
+        fields = ["id", "slug", "canonical_name", "brand", "category", "quantity", "unit", "pack_count", "size", "image", "is_demo", "best_price", "standard_unit_price", "has_mixed_areas", "has_unverified_areas", "has_comparison", "comparison_area", "snapshot", "listings"]
 
 
 class HistorySerializer(serializers.ModelSerializer):

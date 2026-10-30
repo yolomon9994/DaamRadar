@@ -10,6 +10,8 @@ Lists are saved in this browser's local storage under `daamradar.shopping-list.v
 
 JavaScript is required for shopping-list controls. Product browsing and individual comparisons remain available without it. Page views and basket calculations never trigger retailer collection.
 
+Basket totals, budget assessments and printable prices now share a finite snapshot: at most five minutes, and earlier if an observation's eligibility can change. Future-dated checks are excluded with **Check time needs review**. Expiry clears estimates/print prices without fetching automatically or changing saved items/budgets; choose **Refresh estimates** to reload local eligibility. Focus/visibility/history checks also enforce expiry after suspension. Screen and print check times use PKT. Existing PDF files remain dated documents and do not update themselves. See [expiry and usability rules](usability.md).
+
 ## Find products and undo removals
 
 On the shopping-list page, use **Add groceries to this list** to search the active Demo or Collected catalog. Enter at least two characters; search starts after a short pause, or select **Search** to run it immediately. Up to six matches show product names, exact pack sizes, links to their detail pages and **Add 1 pack** buttons. Use Tab to reach a result's button and Enter or Space to add it. **Clear search**, or Escape in the input, clears results and cancels pending requests.

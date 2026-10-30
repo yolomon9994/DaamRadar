@@ -14,7 +14,7 @@ The release target is a reliable local grocery comparison and planning applicati
 | 8 | Catalog-quality review report for missing sizes, duplicates, conflicts and uncertain matches | Complete; see [checks, limits and validation](catalog-quality.md) |
 | 9 | Analysis export and reproducible notebook | Skipped |
 | 10 | Measured matching benchmark | Skipped |
-| 11 | Usability, accessibility, snapshot-expiry consistency and measured performance pass | Next |
-| 12 | Fresh-install verification, documentation/screenshots, full checks and tagged v1.0 release | Pending |
+| 11 | Usability, accessibility, snapshot-expiry consistency and measured performance pass | Complete; see [expiry rules, accessibility checks and measurements](usability.md) |
+| 12 | Fresh-install verification, documentation/screenshots, full checks and tagged v1.0 release | Next |
 
 The finish line is an independently usable local installation, a documented reviewed catalog, trustworthy observation/comparison rules, passing required checks and no unresolved critical defects. Achieved coverage and remaining source limitations must be reported honestly. After release, focus shifts to fixes, data maintenance and feedback.
