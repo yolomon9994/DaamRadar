@@ -65,6 +65,8 @@ Select **Add to list** on product cards or detail pages, then open **Shopping li
 
 Demo and collected lists stay separate and are saved in the same browser without an account. JavaScript and browser storage enable persistence; the page warns if storage is unavailable. No live collection runs when using the list. See [shopping-list behavior, API and checks](docs/shopping-list.md).
 
+Use **Add groceries to this list** to search the active catalog without leaving the list. Check the exact pack size, then select **Add 1 pack**. After removing an item or clearing the list, **Undo** restores that latest action until the next list edit or a list change in another tab. Estimates reload from the local catalog. See [search and undo rules](docs/shopping-list.md#find-products-and-undo-removals).
+
 Under **Plan your shopping budget**, enter a PKR amount and select **Save budget**. Complete retailer estimates show the amount remaining, exact equality or an overage; incomplete or conflicting-area baskets show **Cannot assess full budget**. Demo and Collected budgets stay separate in this browser. Budget comparisons exclude delivery and checkout charges. See [budget rules](docs/shopping-list.md#set-a-shopping-budget).
 
 To take a checklist to the store, open **Take your list with you**, select a retailer (or items only), and choose **Print / Save as PDF**. The print view includes pack sizes, quantities, purchase checkboxes, dated observations and any exclusion/area warnings. Choose **Save as PDF** in the browser's print dialog to keep a copy on your phone. See [printing instructions](docs/shopping-list.md#print-a-checklist-or-save-a-pdf).

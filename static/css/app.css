@@ -2184,6 +2184,23 @@ h3 {
   padding-top:30px;
   border-top:1px solid var(--border);
 }
+.list-search, .list-undo {
+  margin:24px 0;
+  padding:24px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--cream);
+}
+.list-search label {display:block; font-weight:600; margin-bottom:10px;}
+.list-search input {flex:1 1 220px; min-width:0; padding:12px; border:1px solid var(--border); border-radius:8px; font:inherit;}
+.list-search-results {list-style:none; padding:0; margin:16px 0 0;}
+.list-search-results li {display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding:16px 0; border-top:1px solid var(--border);}
+.list-search-results li > div {flex:1 1 180px; min-width:0; overflow-wrap:anywhere;}
+.list-search-results a {font-weight:600;}
+.list-search-results small {display:block; margin-top:5px; color:var(--muted);}
+.list-search-results button {flex-shrink:0;}
+.list-undo small {display:block; margin-top:12px;}
+.list-undo[hidden], .list-search[hidden], .list-search-results[hidden] {display:none;}
 .list-transfer {
   margin:24px 0 32px;
   padding:24px;

@@ -13,6 +13,7 @@
   let budgetDraft = false;
   let controller;
   let revision = 0;
+  let storedListValue = null;
   const names = new Map();
   const source = page ? page.dataset.source : null;
   const validSource = (value) => value === "demo" || value === "live";
@@ -21,6 +22,7 @@
   function load() {
     try {
       const raw = localStorage.getItem(key);
+      storedListValue = raw;
       if (raw === null) return {demo: [], live: []};
       const saved = JSON.parse(raw);
       for (const catalog of ["demo", "live"]) {
@@ -54,7 +56,9 @@
 
   function save() {
     try {
-      localStorage.setItem(key, JSON.stringify(state));
+      const value = JSON.stringify(state);
+      localStorage.setItem(key, value);
+      storedListValue = value;
       return true;
     } catch (_) {
       notify("Browser storage is unavailable or full. Changes last only on this page.");
@@ -94,7 +98,11 @@
   // Keep separate tabs synchronized; the server never stores the shopping list.
   window.addEventListener("storage", (event) => {
     if (event.key !== key && event.key !== budgetKey && event.key !== null) return;
-    if (event.key !== budgetKey) { state = load(); updateCounts(); }
+    if (event.key !== budgetKey) {
+      if (page) invalidateUndo("List changed in another tab. Undo is no longer available.");
+      state = load();
+      updateCounts();
+    }
     if (page) {
       if (event.key !== key) { budgets = loadBudgets(); renderBudget(); }
       refresh(event.key !== budgetKey);
@@ -112,6 +120,57 @@
   const budgetInput = page.querySelector("[data-budget-input]");
   const budgetNote = page.querySelector("[data-budget-note]");
   let updateTransfer = () => {};
+  const editNote = page.querySelector("[data-list-edit-note]");
+  const undoRegion = page.querySelector("[data-list-undo]");
+  const undoButton = page.querySelector("[data-list-undo-button]");
+  let undoState = null;
+  let undoFocusSlug = null;
+  function invalidateUndo(note = "") {
+    const hadUndo = undoState !== null;
+    undoState = null;
+    undoRegion.hidden = true;
+    page.querySelector("[data-list-undo-note]").textContent = "";
+    if (hadUndo && note) editNote.textContent = note;
+  }
+  function rememberRemoval(description, focusSlug) {
+    undoState = state[source].map(transfer.cleanEntry);
+    undoFocusSlug = focusSlug;
+    editNote.textContent = "";
+    page.querySelector("[data-list-undo-note]").textContent = description;
+    undoRegion.hidden = false;
+  }
+  function quantitiesReady(exceptInput = null) {
+    const invalid = [...list.querySelectorAll("[aria-invalid='true']")].find((input) => input !== exceptInput);
+    if (!invalid) return true;
+    editNote.textContent = "Correct quantities to whole numbers from 1 to 99 before changing other items.";
+    invalid.focus();
+    return false;
+  }
+  undoButton.addEventListener("click", () => {
+    if (!undoState || !quantitiesReady()) return;
+    // A storage event may still be queued when Undo is clicked. Never replace
+    // another tab's newer list, including changes to the other catalog.
+    let changedElsewhere = false;
+    try { changedElsewhere = localStorage.getItem(key) !== storedListValue; } catch (_) { /* Page-only use. */ }
+    if (changedElsewhere) {
+      invalidateUndo("List changed in another tab. Undo is no longer available.");
+      state = load();
+      updateCounts();
+      refresh(true);
+      page.querySelector("[data-list-search-input]").focus();
+      return;
+    }
+    state[source] = undoState.map(transfer.cleanEntry);
+    const focusSlug = undoFocusSlug;
+    invalidateUndo();
+    const persisted = save();
+    updateCounts();
+    refresh(true);
+    editNote.textContent = persisted ? "List restored. Estimates are reloaded from the local catalog." :
+      "List restored on this page only; browser storage is unavailable. Estimates are reloaded from the local catalog.";
+    const row = [...list.children].find((node) => node.querySelector("[data-item-name]").dataset.itemName === focusSlug);
+    (row?.querySelector("input") || page.querySelector("[data-list-search-input]")).focus();
+  });
   const printSection = page.querySelector("[data-list-print]");
   const printSheet = page.querySelector("[data-print-sheet]");
   const printUnavailable = page.querySelector("[data-print-unavailable]");
@@ -347,6 +406,8 @@
       Object.assign(input, {type: "number", min: "1", max: "99", step: "1", value: item.quantity});
       input.setAttribute("aria-label", "Quantity for " + (names.get(item.slug)?.name || item.slug));
       input.addEventListener("input", () => {
+        invalidateUndo();
+        editNote.textContent = "";
         if (!input.validity.valid || !/^[1-9][0-9]?$/.test(input.value)) {
           if (controller) controller.abort();
           revision += 1;
@@ -368,12 +429,13 @@
       remove.type = "button";
       remove.setAttribute("aria-label", "Remove " + (names.get(item.slug)?.name || item.slug));
       remove.addEventListener("click", () => {
+        if (!quantitiesReady(input)) return;
+        rememberRemoval("Removed " + (names.get(item.slug)?.name || item.product?.name || item.slug) + ".", item.slug);
         state[source] = state[source].filter((entry) => entry.slug !== item.slug);
         save();
         updateCounts();
         refresh(true);
-        // Keep keyboard focus in the list after its button is removed.
-        (list.querySelector("button") || page.querySelector("a")).focus();
+        undoButton.focus();
       });
       row.append(link, quantityLabel, remove);
       list.append(row);
@@ -489,16 +551,20 @@
     }
   }
   page.querySelector("[data-list-clear]").addEventListener("click", () => {
+    if (!state[source].length || !quantitiesReady()) return;
+    rememberRemoval("Cleared " + state[source].length + " product(s) from this list.", state[source][0].slug);
     state[source] = [];
     save();
     updateCounts();
     refresh(true);
-    page.querySelector("a").focus();
+    undoButton.focus();
   });
   refreshButton.addEventListener("click", () => refresh(false));
   updateTransfer = transfer.mount({page, source, read: () => state[source].map(transfer.cleanEntry),
     hasInvalidQuantities: () => Boolean(list.querySelector("[aria-invalid='true']")),
     commit: (entries) => {
+      invalidateUndo();
+      editNote.textContent = "";
       state[source] = entries;
       pickedUp.clear();
       const persisted = save();
@@ -506,5 +572,110 @@
       refresh(true);
       return persisted;
     }});
+  setupListSearch();
   refresh(true);
+
+  function setupListSearch() {
+    const section = page.querySelector("[data-list-search]");
+    const input = section.querySelector("[data-list-search-input]");
+    const results = section.querySelector("[data-list-search-results]");
+    const status = section.querySelector("[data-list-search-status]");
+    let timer;
+    let searchController;
+    let searchRevision = 0;
+    section.hidden = false;
+    function cancel() {
+      clearTimeout(timer);
+      searchRevision += 1;
+      if (searchController) searchController.abort();
+      results.replaceChildren();
+      results.hidden = true;
+      results.removeAttribute("aria-busy");
+    }
+    function add(product) {
+      if (!quantitiesReady()) return;
+      const item = state[source].find((entry) => entry.slug === product.slug);
+      if (item?.unresolved) {
+        editNote.textContent = "An unpriced saved entry uses this reference. Review or remove it before adding this exact product.";
+        return;
+      }
+      if (item?.quantity === 99) {
+        editNote.textContent = "This product already has the maximum quantity of 99.";
+        return;
+      }
+      if (!item && state[source].length >= 50) {
+        editNote.textContent = "Your list has 50 products. Remove one before adding another.";
+        return;
+      }
+      invalidateUndo();
+      if (item) item.quantity += 1;
+      else state[source].push({slug: product.slug, quantity: 1});
+      const persisted = save();
+      updateCounts();
+      refresh(true);
+      editNote.textContent = "Added one pack of " + product.name + " (" + product.size + "). Now " +
+        (item ? item.quantity : 1) + " pack(s)." + (persisted ? "" : " Changes last only on this page; browser storage is unavailable.");
+    }
+    async function search() {
+      cancel();
+      const query = input.value.trim();
+      if (query.length < 2) {
+        status.textContent = query ? "Enter at least two characters to find products." : "";
+        return;
+      }
+      const requestRevision = searchRevision;
+      const requestController = new AbortController();
+      searchController = requestController;
+      const timeout = setTimeout(() => requestController.abort(), 15000);
+      status.textContent = "Searching the local catalog…";
+      results.setAttribute("aria-busy", "true");
+      try {
+        const response = await fetch(page.dataset.searchUrl + "?" + new URLSearchParams({source, q: query}),
+          {signal: requestController.signal, cache: "no-store"});
+        if (!response.ok) throw new Error("Search unavailable");
+        const data = await response.json();
+        if (requestRevision !== searchRevision) return;
+        if (data.source !== source || !Array.isArray(data.results) || data.results.length > 6 ||
+            data.results.some((product) => !validSlug(product.slug) || typeof product.name !== "string" || typeof product.size !== "string")) {
+          throw new Error("Invalid search results");
+        }
+        data.results.forEach((product) => {
+          const row = element("li");
+          const details = element("div");
+          const link = element("a", product.name);
+          link.href = "/products/" + encodeURIComponent(product.slug) + "/";
+          details.append(link, element("small", product.size));
+          const button = element("button", "Add 1 pack", "button-small");
+          button.type = "button";
+          button.dataset.listSearchAdd = product.slug;
+          button.setAttribute("aria-label", "Add 1 pack of " + product.name + " (" + product.size + ")");
+          button.addEventListener("click", () => add(product));
+          row.append(details, button);
+          results.append(row);
+        });
+        results.hidden = data.results.length === 0;
+        status.textContent = data.results.length ? data.results.length + " match(es). Review the pack size, then select Add 1 pack." :
+          "No matching products in this catalog. Try a brand or product name; a different pack size is not automatically substituted.";
+      } catch (_) {
+        if (requestRevision === searchRevision) {
+          results.replaceChildren();
+          results.hidden = true;
+          status.textContent = "Search is unavailable. Check the local server and select Search to retry, or use Add more groceries above. Your list is kept.";
+        }
+      } finally {
+        clearTimeout(timeout);
+        if (requestRevision === searchRevision) results.removeAttribute("aria-busy");
+      }
+    }
+    input.addEventListener("input", () => {
+      cancel();
+      status.textContent = input.value.trim().length < 2 ? "Enter at least two characters to find products." : "Waiting to search…";
+      timer = setTimeout(search, 250);
+    });
+    section.querySelector("form").addEventListener("submit", (event) => { event.preventDefault(); search(); });
+    function clearSearch() { cancel(); input.value = ""; status.textContent = ""; input.focus(); }
+    section.querySelector("[data-list-search-clear]").addEventListener("click", clearSearch);
+    input.addEventListener("keydown", (event) => { if (event.key === "Escape") { event.preventDefault(); clearSearch(); } });
+    window.addEventListener("pagehide", () => { cancel(); invalidateUndo(); });
+  }
 })();

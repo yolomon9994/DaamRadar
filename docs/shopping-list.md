@@ -10,6 +10,18 @@ Lists are saved in this browser's local storage under `daamradar.shopping-list.v
 
 JavaScript is required for shopping-list controls. Product browsing and individual comparisons remain available without it. Page views and basket calculations never trigger retailer collection.
 
+## Find products and undo removals
+
+On the shopping-list page, use **Add groceries to this list** to search the active Demo or Collected catalog. Enter at least two characters; search starts after a short pause, or select **Search** to run it immediately. Up to six matches show product names, exact pack sizes, links to their detail pages and **Add 1 pack** buttons. Use Tab to reach a result's button and Enter or Space to add it. **Clear search**, or Escape in the input, clears results and cancels pending requests.
+
+Adding an existing product increments its pack quantity; another pack size remains a separate product. The existing 50-product and 99-pack limits apply. Search uses the same conservative local matching as the main search and does not substitute an unavailable exact size. Searching, adding and calculating estimates never contact retailer sites. Search results make no price, stock or delivery claim; the basket reloads dated observations with the existing exclusions. Failed searches offer retry/browse guidance and keep the list. Slower obsolete responses cannot replace the latest results, and product text is inserted safely as text.
+
+**Remove** and **Clear this list** reveal an **Undo** button, including when the list becomes empty. Undo restores the active catalog's previous item order, quantities, cached identity details and unresolved import flags, then requests fresh basket estimates. It does not restore saved prices or temporary purchase checkboxes, alter the other catalog, or change budgets/watch targets. An unresolved imported reference cannot be silently converted into a priced product by adding a matching search slug; review/remove that entry first.
+
+Undo holds one action in memory on the current page. It has no countdown. A later removal/clearing replaces that action; adding a product, editing a quantity, applying an import, leaving the page or receiving a list change from another tab discards it. Searching, refreshing estimates and changing budgets do not discard it. A check immediately before restoration also detects newer saved lists whose storage event has not yet arrived. Undo never replaces another tab's newer list.
+
+Invalid quantity drafts must be corrected before adding products, clearing the list or removing another row. You can remove the invalid row itself; undo restores its last valid saved quantity. Blocked/full storage still allows additions, removals and undo in memory with an explicit warning that changes last only on this page. Editing controls require JavaScript; ordinary product browsing remains linked without it. No storage-format change, dependency or database migration is required.
+
 ## Set a shopping budget
 
 Open **Shopping list → Plan your shopping budget**, enter a PKR amount and select **Save budget**. Demo and Collected lists have independent budgets. A budget can be set before adding any products. Use **Remove budget** to stop comparing against it; your products, quantities, the other catalog's budget and watch targets are preserved.
@@ -141,3 +153,11 @@ The budget milestone passed all 263 offline automated tests on SQLite under Wind
 Twenty-eight Chrome budget checks passed, covering empty lists, saved and independent catalog budgets, exact equality, overages, zero limits, invalid drafts, printing, a real budget PDF, items-only output, navigation persistence, cross-tab updates, delayed older responses, quantity edits, failures, corrupt/blocked storage, retained budgets on list clearing/import and unchanged JSON transfers. Layouts were checked at 1280px and 390px. The existing 21 print/PDF and 24 list-transfer browser checks also passed, for 73 Chrome checks in this milestone. Disposable servers verified the development database and `.env` were unchanged; generated screenshots/PDFs remain ignored artifacts.
 
 SQLite production smoke validation passed through Waitress and WhiteNoise, including exact remaining budget for a complete basket and withheld budget assessments for missing products, alongside existing routes/assets and server shutdown. Budget behavior requires no new dependency or migration.
+
+## Search and undo validation, 30 October 2026
+
+All **338 offline tests passed on SQLite and PostgreSQL 17.11**. **37 new Chrome checks** covered empty-list search, exact pack selection, repeated additions, quantity/product limits, removal and clear restoration, order/identity preservation, invalid drafts, focus and keyboard controls, independent catalogs, budget-only tab updates, list changes in another tab, the queued-storage-event race, unresolved reference collisions, import application, obsolete search responses, failed requests, escaped product text, blocked storage and operation without JavaScript. Search/add controls fit both 1280px and 390px viewports.
+
+The existing **24 list-transfer checks and 21 print/PDF checks** also passed, for **82 Chrome checks** in this milestone. Actual PDFs retained the one-page two-item checklist and five-page 50-item checklist, with editing controls hidden. Disposable browser servers blocked retailer HTTP and confirmed the development database and `.env` were unchanged. QA helpers, screenshots and PDFs remain ignored local artifacts under `reports/`.
+
+SQLite and PostgreSQL production HTTP checks passed through Waitress and WhiteNoise, including hashed JavaScript/CSS delivery and the existing list, search, import, budget and comparison routes. Fresh PostgreSQL migrations, migration-drift checks, static collection and full-row backup/restore passed; temporary servers stopped. No dependency, migration, new API endpoint or browser storage format was added.
