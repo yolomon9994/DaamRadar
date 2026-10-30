@@ -73,6 +73,8 @@ To take a checklist to the store, open **Take your list with you**, select a ret
 
 To back up or move an editable list, use **Back up or transfer your list → Download list JSON**. On another local installation, choose **Preview a list file**, review local matches, then **Merge** quantities or **Replace** that catalog's list. Files contain product identities and quantities; prices come from the receiving database. Uncertain matches remain visible and unpriced. See [transfer rules and file format](docs/shopping-list.md#back-up-or-transfer-an-editable-list).
 
+On **Watchlist**, use **Back up targets and budget** to download a separate JSON backup for the active catalog. Preview exact product matches and the budget change, then choose **Replace targets and budget** to restore. Unmatched targets remain visible without price alerts. Shopping-list items and the other catalog are kept. See [backup rules and format](docs/planning-backups.md).
+
 Product cards, retailer listings and included basket items also show **Rs/L**, **Rs/kg** or **Rs/item** alongside the pack price. These rates use total pack contents, including multipacks; unknown sizes show **Unit price unavailable**. For example, the fictional demo's 250 ml milk at Rs. 85 is Rs. 340/L. See [calculation rules and API fields](docs/unit-pricing.md).
 
 To follow a regular purchase, select **Watch price** on its card or detail page, enter your target pack price in PKR, and save it. Open **Watchlist** in the header to check, edit or remove targets. Fresh, in-stock observations at or below the target show **Observed target met** with check times and delivery warnings. Targets stay in this browser, separately for Demo and Collected; checks use stored data when you open the watchlist/product or select **Check targets**. See [watchlist behavior and limits](docs/watchlist.md).
@@ -120,6 +122,7 @@ To follow a regular purchase, select **Watch price** on its card or detail page,
 | `GET /api/basket/?source=demo&item=<slug>:<quantity>` | Read-only retailer basket coverage and item-price estimates |
 | `GET /api/watchlist/?source=demo&item=<slug>:<target>` | Read-only target checks against fresh, in-stock observed pack prices |
 | `POST /api/shopping-list/preview/` | Read-only list-file validation and local product resolution; no list or catalog writes |
+| `POST /api/preferences/preview/` | Read-only watch-target/budget backup validation and local product resolution; no saved-preference or catalog writes |
 | `GET /health/` | Database connectivity readiness; generic 200/503 response |
 
 Product list parameters: `q`, `category` (slug), `retailer` (slug), `brand`, `source=demo|live`, `sort=relevance|price_asc|price_desc`, `page`, and `page_size` (up to 48).

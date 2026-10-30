@@ -7,13 +7,14 @@ from django.utils import timezone
 
 from catalog.models import Product, RetailerListing
 from catalog.services.unit_pricing import standard_unit_price
+from catalog.services.list_transfer import product_descriptor
 
 
-def check_targets(items, source):
+def check_targets(items, source, unresolved=()):
     now = timezone.now()
     window = timedelta(hours=settings.PRICE_STALE_HOURS)
     demo = source == "demo"
-    products = {p.slug: p for p in Product.objects.filter(slug__in=[slug for slug, _ in items], is_demo=demo)}
+    products = {p.slug: p for p in Product.objects.filter(slug__in=[slug for slug, _ in items], is_demo=demo).exclude(slug__in=unresolved)}
     offers = defaultdict(list)
     for offer in RetailerListing.objects.filter(product__in=products.values(), is_demo=demo).select_related("retailer").order_by("retailer__name", "pk"):
         offers[offer.product_id].append(offer)
@@ -51,6 +52,7 @@ def check_targets(items, source):
                          "delivery_area": offer.delivery_area, "area_is_verified": verified})
         results.append({"slug": slug, "target": format(target, ".2f"), "available": product is not None,
                         "name": product.canonical_name if product else None, "size": product.size_label if product else None,
+                        "product": product_descriptor(product) if product else None,
                         "status": status, "message": message, "observed_price": format(price, ".2f") if price is not None else None,
                         "standard_unit_price": standard_unit_price(product, price),
                         "last_observed_at": max(o.last_checked for o in observations).isoformat() if observations else None,

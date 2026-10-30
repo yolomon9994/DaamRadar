@@ -23,9 +23,11 @@ Each successful check shows its local evaluation time separately from retailer c
 
 ## Browser storage
 
-No account or new dependency is needed. JavaScript is required for saving and checking targets. Storage key `daamradar.watchlist.v1` contains separate `demo` and `live` arrays with `slug`, normalized `target`, cached `name` and cached `size`. It stores no observed prices, match results, retailer sessions or account data. Cached names keep removed products recognizable; available products use current local names/sizes when displayed.
+No account or new dependency is needed. JavaScript is required for saving and checking targets. Storage key `daamradar.watchlist.v1` contains separate `demo` and `live` arrays with `slug`, normalized `target`, cached `name` and cached `size`. Successful checks also cache an optional portable `product` identity descriptor; older entries without it still load. Unmatched imported entries carry `unresolved` and `origin_slug` and remain ineligible for price alerts. It stores no observed prices, match results, retailer sessions or account data. Cached names keep removed products recognizable; available products use current local names/sizes when displayed.
 
 Targets persist only at the same browser origin/profile. Ports, `localhost` versus `127.0.0.1`, other computers/profiles and cleared browser storage do not share them. Blocked/full storage falls back to page-only use with a warning; leaving that page loses unsaved-to-storage changes. Malformed or oversized stored lists produce an empty state with an explanation. Other tabs at the same origin receive storage updates. Shopping-list storage and its JSON/PDF transfers remain separate and do not include watch targets.
+
+Use **Back up targets and budget** on the watchlist page for a separate portable JSON backup of the active catalog's targets and budget. Preview exact local matches before explicitly replacing both. Unmatched targets remain visible without alerts, and shopping-list items are kept. See [the file format, restoration rules and validation](planning-backups.md).
 
 ## Read-only API
 
@@ -33,11 +35,11 @@ Targets persist only at the same browser origin/profile. Ports, `localhost` vers
 GET /api/watchlist/?source=demo&item=demo-olpers-milk-1l:325.00
 ```
 
-Repeat `item=slug:target` for up to 50 unique products. `source` is `demo` (default) or `live`. The API accepts positive decimal PKR targets with up to ten integer digits and two fractional digits, without leading zeroes except `0.xx`. It rejects malformed amounts, duplicates, wrong source values and more than 50 items with HTTP 400. An empty list returns empty `items`. POST and other writes are unsupported. Responses use `Cache-Control: no-store` and the normal anonymous API throttle.
+Repeat `item=slug:target` for up to 50 unique products. `source` is `demo` (default) or `live`. The API accepts positive decimal PKR targets with up to ten integer digits and two fractional digits, without leading zeroes except `0.xx`. It rejects malformed amounts, duplicates, wrong source values and more than 50 items with HTTP 400. An empty list returns empty `items`. Optional repeated `unresolved=slug` values must belong to the submitted items; these entries are excluded from product lookup and cannot produce price alerts, even if a local slug collides. POST and other writes are unsupported. Responses use `Cache-Control: no-store` and the normal anonymous API throttle.
 
 The response has `source`, `currency`, `evaluated_at`, nullable `expires_at`, and `items`. Each item includes:
 
-- `slug`, normalized `target`, `available`, current nullable `name`/`size`.
+- `slug`, normalized `target`, `available`, current nullable `name`/`size` and nullable portable `product` identity (no prices).
 - `status`: `target_met`, `above_target`, `stale`, `out_of_stock`, `availability_unknown`, `not_listed`, `product_unavailable` or `unavailable` (invalid observation time).
 - `message`, nullable `observed_price`, nullable `standard_unit_price`, and nullable `last_observed_at`.
 - `has_unverified_areas`, `has_mixed_areas`, and `offers` containing only eligible observations. Each offer includes `retailer`, `price`, `meets_target`, `last_checked`, `delivery_area` and `area_is_verified`.

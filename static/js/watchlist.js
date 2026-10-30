@@ -11,6 +11,8 @@
   let revision = 0;
   let controller;
   let expiryTimer;
+  let updateBackup = () => {};
+  let unreadableTargets = false;
   const drafts = new Map();
   const validSlug = (value) => typeof value === "string" && /^[-a-zA-Z0-9_]{1,280}$/.test(value);
   function targetPrice(value) {
@@ -22,6 +24,7 @@
   function load() {
     try {
       warning = "";
+      unreadableTargets = false;
       const raw = localStorage.getItem(key);
       if (raw === null) return {demo: [], live: []};
       const saved = JSON.parse(raw);
@@ -34,20 +37,22 @@
               (item.name !== undefined && (typeof item.name !== "string" || item.name.length > 255)) ||
               (item.size !== undefined && (typeof item.size !== "string" || item.size.length > 80))) throw new Error("Invalid target");
           seen.add(item.slug);
-          return {slug: item.slug, target: targetPrice(item.target), name: item.name || item.slug, size: item.size || "Size unspecified"};
+          return window.DaamRadarPreferencesBackup.cleanTarget({...item, target: targetPrice(item.target)});
         });
       }
       return next;
     } catch (_) {
       warning = "Saved targets could not be read. This page uses an empty watchlist until you save a target.";
+      unreadableTargets = true;
       return {demo: [], live: []};
     }
   }
   function save() {
-    try { localStorage.setItem(key, JSON.stringify(state)); warning = ""; return true; }
+    try { localStorage.setItem(key, JSON.stringify(state)); warning = ""; unreadableTargets = false; return true; }
     catch (_) { warning = "Browser storage is unavailable or full. Target changes last only on this page."; return false; }
   }
   function counts() {
+    updateBackup();
     document.querySelectorAll("[data-watch-total]").forEach((node) => { node.textContent = state.demo.length + state.live.length; });
     document.querySelectorAll("[data-watch-count]").forEach((node) => { node.textContent = state[node.dataset.watchCount].length; });
     document.querySelectorAll("[data-watch-link]").forEach((node) => {
@@ -105,6 +110,7 @@
       input.setCustomValidity(target ? "" : "Enter a positive PKR amount with at most two decimal places.");
       input.setAttribute("aria-invalid", String(!target));
       drafts.set(slug, input.value);
+      updateBackup();
       result.replaceChildren(element("p", "Save this target to check prices."));
       say("Target edited. Save it to check prices.");
     });
@@ -135,7 +141,9 @@
     list.replaceChildren();
     entries.forEach((item, index) => {
       const row = element("li", undefined, "watch-item"); row.dataset.watchSlug = item.slug;
-      const link = element("a", item.name); link.href = "/products/" + encodeURIComponent(item.slug) + "/#watch-price"; link.dataset.watchName = "";
+      const link = element("a", item.name); link.dataset.watchName = "";
+      if (!item.unresolved) link.href = "/products/" + encodeURIComponent(item.slug) + "/#watch-price";
+      else link.setAttribute("aria-disabled", "true");
       const heading = element("h2"); heading.append(link); row.append(heading, element("p", item.size, "watch-size muted"));
       const form = element("form", undefined, "watch-form");
       const label = element("label", "Target pack price (PKR)"); label.htmlFor = "watch-target-" + index;
@@ -190,12 +198,26 @@
     clearResults("Checking stored prices…"); say("Checking targets against the local catalog…"); host.setAttribute("aria-busy", "true");
     const currentController = new AbortController(); controller = currentController;
     const timeout = setTimeout(() => currentController.abort(), 15000);
-    const query = new URLSearchParams({source}); entries.forEach((item) => query.append("item", item.slug + ":" + item.target));
+    const query = new URLSearchParams({source}); entries.forEach((item) => {
+      query.append("item", item.slug + ":" + item.target);
+      if (item.unresolved) query.append("unresolved", item.slug);
+    });
     try {
       const response = await fetch(host.dataset.checkUrl + "?" + query, {cache: "no-store", signal: currentController.signal});
       if (!response.ok) throw new Error("Target check failed");
       const data = await response.json();
       if (requestRevision !== revision) return;
+      let metadataChanged = false;
+      data.items.forEach((item) => {
+        const saved = state[source].find((entry) => entry.slug === item.slug);
+        if (!saved || saved.unresolved || !item.product) return;
+        const product = window.DaamRadarListTransfer.cleanProduct(item.product);
+        if (JSON.stringify(saved.product) !== JSON.stringify(product) || saved.name !== item.name || saved.size !== item.size) {
+          Object.assign(saved, {product, name: item.name, size: item.size});
+          metadataChanged = true;
+        }
+      });
+      if (metadataChanged) { save(); updateBackup(); }
       data.items.forEach(showResult);
       const checked = data.items.filter((item) => !drafts.has(item.slug));
       say(`${checked.filter((item) => item.status === "target_met").length} of ${checked.length} saved targets met. Checked locally ${time(data.evaluated_at)}. This is a snapshot of stored observations.${drafts.size ? " Save edited targets to check them." : ""}`);
@@ -220,5 +242,14 @@
     if (event.key !== key && event.key !== null) return;
     state = load(); drafts.clear(); counts(); render(); refresh();
   });
+  if (page) updateBackup = window.DaamRadarPreferencesBackup.mount({page, source,
+    read: () => state, hasDrafts: () => drafts.size > 0, unreadable: () => unreadableTargets,
+    applied: (next) => {
+      state = next;
+      warning = "";
+      unreadableTargets = false;
+      drafts.clear();
+      counts(); render(); refresh();
+    }});
   render(); refresh();
 })();

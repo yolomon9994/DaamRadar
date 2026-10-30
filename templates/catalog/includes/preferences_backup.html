@@ -1,0 +1,21 @@
+<section id="preferences-backup" class="list-transfer" data-preferences-backup data-preview-url="{% url 'api-preferences-preview' %}" hidden aria-labelledby="preferences-backup-title">
+  <h2 id="preferences-backup-title">Back up targets and budget</h2>
+  <p>Download this catalog's saved watch targets and shopping budget. Preview local product matches before restoring. Observed prices and alert results are never imported.</p>
+  <p>Your shopping-list items use the separate <a href="{% url 'shopping-list' %}?source={{ source }}">shopping-list JSON transfer</a>. Demo and Collected backups stay separate.</p>
+  <div class="list-toolbar">
+    <button type="button" class="button-small" data-preferences-download>Download targets and budget JSON</button>
+    <label for="preferences-file">Preview a backup file <input id="preferences-file" type="file" accept=".json,application/json" data-preferences-file></label>
+  </div>
+  <p class="muted">Save or discard target edits before downloading or restoring. Up to 50 targets; files must be at most 256 KiB. Restoring requires browser storage.</p>
+  <p data-preferences-note role="status" aria-live="polite"></p>
+  <div data-preferences-preview hidden>
+    <h3>Restore preview</h3>
+    <div class="table-responsive" tabindex="0" role="region" aria-label="Target restore preview; scroll sideways on small screens">
+      <table class="table transfer-table"><thead><tr><th scope="col">Product</th><th scope="col">Pack size</th><th scope="col">Target (PKR)</th><th scope="col">Local match</th><th scope="col">Details</th></tr></thead><tbody data-preferences-rows></tbody></table>
+    </div>
+    <p>Restoring replaces all saved targets and the budget for this catalog. An empty target list clears its watchlist; an unset budget removes its budget. Unmatched products remain visible without price alerts until reviewed. Download your current backup first if you need to keep it.</p>
+    <p data-preferences-summary aria-live="polite"></p>
+    <button type="button" class="button-small" data-preferences-apply disabled>Replace targets and budget</button>
+    <button type="button" class="list-action" data-preferences-cancel>Cancel restore</button>
+  </div>
+</section>

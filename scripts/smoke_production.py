@@ -109,7 +109,7 @@ def main():
                           "Production public freshness snapshot excludes demo and operator controls")
                     source_post = client.post(base + "/sources/", headers=headers, timeout=5)
                     check(source_post.status_code in (403, 405), "Public source page rejects collection POSTs")
-                    for asset in ("css/app.css", "js/app.js", "js/list-transfer.js", "js/shopping-list.js", "js/watchlist.js"):
+                    for asset in ("css/app.css", "js/app.js", "js/list-transfer.js", "js/shopping-list.js", "js/preferences-backup.js", "js/watchlist.js"):
                         path = "/static/" + manifest[asset]
                         check(path in home.text, f"Homepage references hashed {asset}")
                         response = client.get(base + path, headers=headers, timeout=5)
@@ -174,6 +174,18 @@ def main():
                     targets = client.get(base + "/api/watchlist/?source=demo&item=demo-olpers-milk-1l:325.00", headers=headers, timeout=5)
                     check(targets.status_code == 200 and targets.json()["items"][0]["status"] == "target_met"
                           and "no-store" in targets.headers["Cache-Control"], "Production read-only target-price checks")
+                    preferences = client.post(base + "/api/preferences/preview/", headers=headers, timeout=5, json={
+                        "format": "daamradar-planning-preferences", "version": 1, "source": "demo",
+                        "exported_at": basket.json()["estimated_at"], "budget": "700.00", "targets": [{
+                            "slug": "remote-milk-target", "target": "325.00", "name": "Olpers Milk 1L", "size": "1 L",
+                            "product": targets.json()["items"][0]["product"]}]})
+                    check(preferences.status_code == 200 and preferences.json()["budget"] == "700.00"
+                          and preferences.json()["targets"][0]["slug"] == "demo-olpers-milk-1l"
+                          and preferences.json()["targets"][0]["target"] == "325.00"
+                          and "no-store" in preferences.headers["Cache-Control"], "Production portable targets and budget preview")
+                    unresolved = client.get(base + "/api/watchlist/?source=demo&item=demo-olpers-milk-1l:325.00&unresolved=demo-olpers-milk-1l", headers=headers, timeout=5)
+                    check(unresolved.status_code == 200 and unresolved.json()["items"][0]["observed_price"] is None
+                          and not unresolved.json()["items"][0]["offers"], "Production unresolved targets cannot produce price alerts")
                     login = client.get(base + "/admin/login/", headers=headers, timeout=5)
                     check(login.status_code == 200 and "Secure" in login.headers.get("Set-Cookie", ""), "Admin CSRF cookie uses Secure")
                     missing = client.get(base + "/does-not-exist/", headers=headers, timeout=5)

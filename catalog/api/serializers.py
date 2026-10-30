@@ -36,6 +36,12 @@ class BasketQuerySerializer(serializers.Serializer):
 class WatchlistQuerySerializer(serializers.Serializer):
     source = serializers.ChoiceField(choices=["demo", "live"], default="demo")
     items = serializers.ListField(child=serializers.CharField(trim_whitespace=False), max_length=50, default=list)
+    unresolved = serializers.ListField(child=serializers.RegexField(r"\A[-a-zA-Z0-9_]{1,280}\Z"), max_length=50, default=list)
+
+    def validate(self, data):
+        if not set(data["unresolved"]).issubset({slug for slug, _ in data["items"]}):
+            raise serializers.ValidationError("Unresolved targets must belong to this watchlist.")
+        return data
 
     def validate_items(self, values):
         result, seen = [], set()
@@ -99,6 +105,42 @@ class ListTransferSerializer(StrictDocumentSerializer):
         if len({item["slug"] for item in items}) != len(items):
             raise serializers.ValidationError("Duplicate product references are not allowed in a list file.")
         return items
+
+
+class PreferenceMoneyField(serializers.Field):
+    def __init__(self, *, positive=False, **kwargs):
+        self.positive = positive
+        super().__init__(**kwargs)
+
+    def to_internal_value(self, value):
+        if not isinstance(value, str) or not re.fullmatch(r"[0-9]{1,10}(?:\.[0-9]{1,2})?", value):
+            raise serializers.ValidationError("Use a decimal string in PKR with at most two decimal places.")
+        amount = Decimal(value)
+        if self.positive and amount < Decimal("0.01"):
+            raise serializers.ValidationError("Targets must be at least 0.01 PKR.")
+        return format(amount, ".2f")
+
+
+class TransferTargetSerializer(StrictDocumentSerializer):
+    slug = serializers.RegexField(r"\A[-a-zA-Z0-9_]{1,280}\Z")
+    target = PreferenceMoneyField(positive=True)
+    name = serializers.CharField(max_length=255, trim_whitespace=False)
+    size = serializers.CharField(max_length=80, trim_whitespace=False)
+    product = TransferProductSerializer(allow_null=True)
+
+
+class PreferencesTransferSerializer(StrictDocumentSerializer):
+    format = serializers.ChoiceField(choices=["daamradar-planning-preferences"])
+    version = StrictIntegerField(min_value=1, max_value=1)
+    source = serializers.ChoiceField(choices=["demo", "live"])
+    exported_at = serializers.DateTimeField()
+    budget = PreferenceMoneyField(allow_null=True)
+    targets = TransferTargetSerializer(many=True, allow_empty=True, max_length=50)
+
+    def validate_targets(self, targets):
+        if len({item["slug"] for item in targets}) != len(targets):
+            raise serializers.ValidationError("Duplicate target references are not allowed.")
+        return targets
 
 
 class RetailerSerializer(serializers.ModelSerializer):

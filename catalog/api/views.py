@@ -15,10 +15,11 @@ from catalog.services.basket import estimate_basket
 from catalog.services.catalog import decorate, get_product_queryset, search_catalog, search_suggestions, select_source
 from catalog.search_filters import InvalidOfferFilters
 from catalog.services.list_transfer import resolve_list
+from catalog.services.preferences_transfer import resolve_preferences
 from catalog.services.watchlist import check_targets
 from catalog.services.price_changes import attach_price_changes
 from .serializers import (BasketQuerySerializer, CategorySerializer, HistorySerializer,
-                          ListTransferSerializer, ProductSerializer, RetailerSerializer, WatchlistQuerySerializer)
+                          ListTransferSerializer, PreferencesTransferSerializer, ProductSerializer, RetailerSerializer, WatchlistQuerySerializer)
 
 
 @method_decorator(never_cache, name="dispatch")
@@ -35,9 +36,10 @@ class PackComparison(APIView):
 class WatchlistCheck(APIView):
     def get(self, request):
         query = WatchlistQuerySerializer(data={"source": request.query_params.get("source", "demo"),
-                                             "items": request.query_params.getlist("item")})
+                                             "items": request.query_params.getlist("item"),
+                                             "unresolved": request.query_params.getlist("unresolved")})
         query.is_valid(raise_exception=True)
-        return Response(check_targets(query.validated_data["items"], query.validated_data["source"]))
+        return Response(check_targets(query.validated_data["items"], query.validated_data["source"], query.validated_data["unresolved"]))
 
 
 @method_decorator(never_cache, name="dispatch")
@@ -57,14 +59,21 @@ class ListImportPreview(APIView):
     # Anonymous read-only computation: ignore account/session cookies and persist nothing.
     authentication_classes = []
     parser_classes = [JSONParser]
+    document_serializer = ListTransferSerializer
+    resolver = staticmethod(resolve_list)
 
     def post(self, request):
         maximum = 256 * 1024
         if int(request.META.get("CONTENT_LENGTH") or 0) > maximum or len(request.body) > maximum:
             return Response({"detail": "List files must be at most 256 KiB."}, status=413)
-        document = ListTransferSerializer(data=request.data)
+        document = self.document_serializer(data=request.data)
         document.is_valid(raise_exception=True)
-        return Response(resolve_list(document.validated_data))
+        return Response(self.resolver(document.validated_data))
+
+
+class PreferencesImportPreview(ListImportPreview):
+    document_serializer = PreferencesTransferSerializer
+    resolver = staticmethod(resolve_preferences)
 
 
 class CatalogPagination(PageNumberPagination):

@@ -43,6 +43,8 @@ The retailer print/PDF checklist includes the saved budget and that retailer's a
 
 Budgets use a separate browser key, `daamradar.shopping-budget.v1`, with `{ "demo": "3000.00", "live": null }` as an example. Amounts are normalized decimal strings; `null` means unset. Existing shopping-list storage remains compatible. Budgets persist at the same origin/profile, receive changes from other tabs, and are lost when that browser storage is cleared. Blocked/full storage permits page-only use with a warning. Corrupt budgets leave shopping lists intact and show no assessment until a valid budget is saved. No account, dependency or database migration is added; the server never saves budgets or performs retailer requests to assess them.
 
+The budget panel links to **Watchlist → Back up targets and budget**. That separate JSON backup restores the active catalog's watch targets and budget together, after a match/budget preview. Existing shopping-list JSON files keep their original identity/quantity-only format and do not change budgets or targets. See [planning backups](planning-backups.md).
+
 ## Back up or transfer an editable list
 
 1. Open **Shopping list**, choose **Demo list** or **Collected list**, and let its estimates load so product identities can be cached.

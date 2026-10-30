@@ -15,6 +15,7 @@
   <div class="data-notice"><span class="notice-symbol" aria-hidden="true">i</span><p>{% if source == 'demo' %}<strong>Fictional demo alerts.</strong> Sample target matches are not current retailer quotes.{% else %}<strong>Dated observed prices.</strong> A target match needs confirmation of delivery coverage, stock and final checkout costs.{% endif %} Checks use your local database. Collect new prices separately; opening this page does not contact retailers. Results appear here when you open the page or choose Check targets.</p></div>
   <noscript><p class="data-notice">Enable JavaScript to manage targets saved in this browser. You can still browse product comparisons.</p></noscript>
   <p data-watch-message role="status" aria-live="polite"></p>
+  {% include 'catalog/includes/preferences_backup.html' %}
   <div data-watch-content hidden>
     <div class="list-toolbar"><button type="button" class="button-small" data-watch-refresh>Check targets</button><button type="button" class="list-action" data-watch-clear>Clear this watchlist</button></div>
     <p class="muted">Up to 50 products per catalog. Enter a target from 0.01 to 9,999,999,999.99 PKR with up to two decimal places. Targets are prices per canonical pack, including its multipack contents; delivery and checkout charges are excluded.</p>
