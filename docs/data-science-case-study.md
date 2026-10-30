@@ -4,7 +4,7 @@
 
 Pakistani grocery retailers use different titles, units and packaging descriptions for similar products. A useful comparison needs both trustworthy observations and conservative identity matching. DaamRadar stores dated listed prices, matches compatible products and exposes the results through a locally runnable Django website and read-only API. People can download the GitHub project and try labeled demo data without a hosting account or live collection.
 
-The current priority is reproducible local use and analytical evidence. Hosting is deferred. The existing production server, backup and CI work remains useful supporting infrastructure; it is not the principal data science result.
+The v1 scope is reproducible local use with documented acquisition, cleaning, matching and data-quality behavior. Hosting is deferred. The existing production server, backup and CI work remains useful supporting infrastructure; it is not the principal data science result.
 
 ## Implemented data work
 
@@ -22,17 +22,19 @@ Relevant code: [`normalization.py`](../catalog/matching/normalization.py), [`ing
 
 ## Dataset and what it supports
 
-The dated 24 October 2026 development snapshot contains nine real canonical products, seventeen retailer listings, eight cross-retailer pairs and thirty-four real historical observations. Five pairs are milk products and three are pantry products. The collection is small and manually selected, with unequal history per listing. It cannot support a representative statement about grocery inflation, the cheapest retailer across Pakistan, a reliable forecast, or product availability at a particular address.
+The dated 29 October 2026 development snapshot contains 31 real canonical products, 40 retailer listings and 57 real historical observations across four categories. Nine products have reviewed listings from both supported retailers; 22 have one source. The earlier 24 October snapshot contained nine products, seventeen listings and thirty-four observations. See the [expansion batches and validation](expanded-catalog.md). The collection is small and manually selected, with unequal history per listing. It cannot support a representative statement about grocery inflation, the cheapest retailer across Pakistan, a reliable forecast, or product availability at a particular address.
 
 The development SQLite database is ignored and is not distributed with the GitHub project. A clean setup loads twelve fictional demo products and thirty-six fictional listings for application exploration. Minimal factual HTML extracts are included for offline parser tests, with provenance. A future analysis dataset needs explicit scope, dates, a data dictionary and a documented reuse basis; the code's open-source intent does not itself establish rights in retailer content.
 
-Current test results are software-quality evidence. The implementation was validated with 168 automated tests on SQLite and PostgreSQL 17.11 under Windows/Python 3.13, plus production smoke and backup/restore checks. **This is not 168 labeled matching examples and is not a matching-accuracy score.** No held-out precision, recall or F1 result has been reported. See [validation](deployment.md#validation-24-october-2026) and [collection outcomes](pantry-catalog.md).
+Current test results are software-quality evidence. The current implementation passed 384 automated tests on SQLite and PostgreSQL under Windows/Python 3.13, plus production smoke and backup/restore checks. All four hosted Python 3.12/3.13 × SQLite/PostgreSQL jobs passed for the verified application commit. **384 tests are not 384 labeled matching examples and are not a matching-accuracy score.** No held-out precision, recall or F1 result has been reported. See [CI evidence](continuous-integration.md#github-results), the [catalog-quality report](catalog-quality.md) and [snapshot/performance validation](usability.md).
 
 ## Reproduce the local demonstration
 
 Follow the [README quick start](../README.md#quick-start-windows--powershell). With a new SQLite database, migrate, run `seed_demo` and start `runserver` on `127.0.0.1:8000`. Explore search, category/brand/retailer filters, product comparisons and price history. Demo prices and disabled purchase links are labeled explicitly. Page views and searches use the local database and do not collect retailer pages.
 
 On 25 October 2026, a disposable copy of tracked source files was checked without the author's database or `.env`. Using the existing Windows/Python 3.13 dependencies, Django checks, migrations and demo seeding succeeded: twelve demo products, thirty-six listings and thirty-six observations, with zero live products. Ten page/API routes returned HTTP 200 through Django's test client with requests HTTP transport blocked. The original database and configuration were unchanged. This checked clean-source/database initialization, not a new dependency installation or a macOS/Linux runtime.
+
+On 30 October 2026, verification used a new Git source export and a new virtual environment, installed locked dependencies from public PyPI, migrated fresh SQLite data and seeded Demo twice without duplication. Eleven page/API routes, a complete Demo quality report, all 384 offline tests and real production HTTP checks passed. The original database and `.env` remained unchanged. Six [Demo screenshots](screenshots/README.md) and twelve Chrome checks document the user-facing flow. See the [release guide](releases/v1.0.0.md) to reproduce this check and distinguish the verified application commit from the pending release commit/tag.
 
 Run offline validation:
 

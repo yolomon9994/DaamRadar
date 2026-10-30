@@ -17,7 +17,7 @@ Jobs have a fifteen-minute timeout, continue independently if a different matrix
 
 Tests can temporarily override collection settings to exercise command behavior, but [`OfflineDiscoverRunner`](../config/test_runner.py) patches `requests.sessions.Session.send` for the entire run. An unmocked requests HTTP call raises an assertion before transport. Existing adapter tests use minimal saved factual fixtures and mocked responses, including timeout/access-denial cases. Database connections remain available for actual PostgreSQL testing. This guard targets the application's requests client; it is not an operating-system network sandbox or a restriction on pip/GitHub Actions downloads.
 
-Three CI-specific tests check database isolation/configuration, rejection of real HTTP while normal fixture mocks work, and restoration of the patch if test setup fails. With deployment coverage the full suite now contains 168 tests. The subsequent production smoke script is a separate process that makes loopback HTTP requests only; it does not run inside the unit-test HTTP guard.
+Three CI-specific tests check database isolation/configuration, rejection of real HTTP while normal fixture mocks work, and restoration of the patch if test setup fails. As of 30 October 2026, the full suite contains 384 tests. The subsequent production smoke script is a separate process that makes loopback HTTP requests only; it does not run inside the unit-test HTTP guard.
 
 ## Running locally
 
@@ -59,10 +59,14 @@ For the production static-file check, use a temporary process environment and ou
 
 PostgreSQL was not previously installed here. The validation used portable EDB binaries from the [download linked by PostgreSQL](https://www.postgresql.org/download/windows/), an isolated cluster bound to `127.0.0.1`, a generated temporary password and a disposable database. No Windows service was installed and `.env` was not edited. A Windows output-pipe issue in the temporary logging helper was corrected by writing controller output to a file; the subsequent captured test run succeeded and the server was stopped. Downloads, tools, database clusters and validation logs remain local under ignored `reports/`.
 
-These local checks establish Windows/Python 3.13 behavior. Python 3.12 and the Ubuntu/GitHub-hosted service-container matrix have not yet been executed in this session; inspect their actual job results after pushing. No GitHub success badge or hosted-run claim is made here.
+Those checks established Windows/Python 3.13 behavior at that date. Subsequent local and hosted validation is recorded below.
 
 ## GitHub results
 
-After pushing the workflow, open the repository's **Actions → CI** page and inspect all four job results. A pull request also displays these checks. A local test run or actionlint validation does not establish that GitHub's hosted jobs have run. The workflow must reach GitHub first; this change does not commit/push it or configure branch protection.
+On **30 October 2026**, [CI run 41072212310](https://github.com/yolomon9994/DaamRadar/actions/runs/41072212310) completed successfully for commit `f82bee6de40a4aab468b8d2449684bc16e77582c` on `main`. All four jobs passed: Python 3.12/SQLite, Python 3.12/PostgreSQL, Python 3.13/SQLite and Python 3.13/PostgreSQL. One workflow run expands into four matrix jobs; open the run to inspect them individually.
+
+The same application commit passed a clean source export with a newly installed locked-dependency environment on Windows/Python 3.13.0: migrations, repeatable Demo seeding, eleven page/API routes, all 384 offline tests and production HTTP smoke checks. See the [release verification and reproduction commands](releases/v1.0.0.md).
+
+These results apply to that exact commit. After committing/pushing the release files, inspect the new run under **Actions / CI** and confirm all four jobs passed before tagging. A local run does not establish hosted success for a later revision. No deployment or branch-protection setting was configured by this release preparation.
 
 References: [GitHub PostgreSQL service containers](https://docs.github.com/en/actions/tutorials/use-containerized-services/create-postgresql-service-containers), [conditional service images](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idservicesservice_idimage), [setup-python](https://github.com/actions/setup-python).

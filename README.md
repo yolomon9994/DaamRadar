@@ -1,14 +1,18 @@
 # DaamRadar
 
-A local-first Pakistani grocery discovery and listed-price comparison MVP, built with Python, Django 5.2 LTS, Django REST Framework, Django Templates, Bootstrap 5, and vanilla JavaScript.
+A local-first Pakistani grocery discovery and listed-price comparison application, built with Python, Django 5.2 LTS, Django REST Framework, Django Templates, Bootstrap 5, and vanilla JavaScript.
 
 **Run locally from GitHub.** A hosted website is optional and deployment work is deferred. You can clone this repository or download its ZIP, run it on `localhost`, and explore the complete application with clearly labeled demo data. Python 3.12 or 3.13 is required; no hosting account, PostgreSQL installation or retailer credentials are needed for the demo. Installing dependencies requires internet access; browsing the seeded demo does not fetch retailer websites.
 
-This is also a data science portfolio project: it combines public-data collection, cleaning, quantity normalization, product entity resolution, and observed-price history. See the [data science case study](docs/data-science-case-study.md) for implemented methods, evidence, limitations and the next analytical milestones.
+This is also a data science portfolio project: it combines public-data collection, cleaning, quantity normalization, product entity resolution, and observed-price history. See the [data science case study](docs/data-science-case-study.md) for implemented methods, evidence and limitations.
 
 **Data status:** the author's local development catalog contains **31 collected products and 40 listings** across dairy, pantry, drinks and household categories. Nine products have reviewed listings from both Jalal Sons and Cartpk; the remaining 22 have one reviewed source. **This development database is not included in a Git clone or ZIP.** Prices are dated observations, not real-time quotes or delivery guarantees. Delivery areas remain unverified, so no winning retailer or savings claim is shown. A fresh setup instead provides 12 seeded products and 36 seeded listings as fictional demo data. See the [29 October expansion and import batches](docs/expanded-catalog.md), earlier [pantry](docs/pantry-catalog.md)/[milk](docs/milk-catalog.md) reviews and [collection runbook](docs/collection-workflow.md).
 
 On **29 October 2026**, six bounded import runs added 23 fresh listings and their captured observations, bringing real history to 57 records. The earlier 17 listings retain their original 23–24 October check times and are stale at this validation. The imports preserved every earlier record and did not manufacture trends. Freshness changes with time; a new checkout must collect its own observations.
+
+**v1.0 release preparation:** the selected functionality milestones are implemented. A fresh dependency installation passed 384 tests and production HTTP checks; all four hosted CI jobs passed for application commit `f82bee6`. The release files still need a commit and tag. See the [release guide and validation](docs/releases/v1.0.0.md), [changelog](CHANGELOG.md) and [six Demo screenshots](docs/screenshots/README.md).
+
+<img src="docs/screenshots/catalog-demo.png" width="900" alt="DaamRadar Demo catalog with fictional-price notice, filters and grocery cards">
 
 ## Quick start: Windows / PowerShell
 
@@ -53,7 +57,7 @@ test -e .env || cp .env.example .env
 .venv/bin/python manage.py runserver 127.0.0.1:8000
 ```
 
-Open **http://127.0.0.1:8000/**. These instructions use the same SQLite/demo configuration; local runtime verification in the development workspace uses Windows/Python 3.13.
+Open **http://127.0.0.1:8000/**. These instructions use the same SQLite/demo configuration. Fresh-install verification used Windows/Python 3.13; hosted Linux CI passed on Python 3.12 and 3.13 with SQLite and PostgreSQL. A manual macOS installation has not been verified.
 
 Try `Olpers Milk 1L` in the collected catalog. The website and API default to collected records once any exist; a fresh database with only demo fixtures defaults to demo. Switch to **Demo catalog** for `nutela`, `Surf Excel`, or `National Ketchup 400g`. Select category, retailer, brand, or sorting and press **Apply**. Collected product details show real source links, schema availability, check time, and history. One source is labeled an observed price, with no winning-retailer badge. Demo links remain disabled. Real observations are stored in your ignored local database; a fresh checkout must collect its own observations.
 
@@ -139,7 +143,19 @@ Product listings include guarded `price_change` metadata. Historical observation
 
 Demo/live flags are explicit in serialized results. Amounts are decimal strings, denominated in PKR. `best_price` excludes stale, out-of-stock, and unknown-availability offers. Live `has_comparison` requires multiple retailers with evidence for the same delivery scope for every eligible observation; matching area text alone is insufficient. `has_unverified_areas` and `has_mixed_areas` expose area caveats. Listings include `area_is_verified`, `delivery_area_key`, `area_evidence_url` and `area_verified_at`; `comparison_area` describes the qualifying area. APIs do not accept anonymous writes. Anonymous API traffic is limited to 120 requests/minute per application cache/IP; use shared caching and correctly configured proxies for a multi-process production deployment.
 
+## License
+
+Source code is available under the [MIT license](LICENSE). Keep bundled third-party notices, including the [Bootstrap license](static/vendor/BOOTSTRAP-LICENSE.txt). The code license does not grant rights to retailer content or permission to collect it; follow the [collection runbook](docs/collection-workflow.md).
+
 ## Checks
+
+To verify a committed revision in a new source export and venv, with disposable Demo databases:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/verify_install.py --ref HEAD
+```
+
+This developer check requires Git and internet access for the locked dependency install. It runs initialization, repeatable Demo seeding, page/API checks, the offline suite and production smoke checks, then removes the temporary export. Local logs stay in ignored `reports/`; your database and `.env` are checked for changes. A ZIP download still works for normal application use without Git. See [release verification](docs/releases/v1.0.0.md#reproduce-a-fresh-installation-check).
 
 For catalog review, open **Admin → Products → Catalog quality**, or run these read-only commands:
 
@@ -241,7 +257,7 @@ Install PostgreSQL and create a database/user through your normal local administ
 DATABASE_URL=postgresql://daamradar:YOUR_PASSWORD@localhost:5432/daamradar
 ```
 
-Then run `manage.py migrate` against that configured database. SQLite data is not automatically transferred. To seed PostgreSQL for development, run `seed_demo` again. SQLite remains the default development database. All 168 tests passed locally with Python 3.13 against both SQLite and an isolated PostgreSQL 17.11 cluster; see [deployment validation](docs/deployment.md#validation-24-october-2026).
+Then run `manage.py migrate` against that configured database. SQLite data is not automatically transferred. To seed PostgreSQL for development, run `seed_demo` again. SQLite remains the default development database. The current 384-test suite passed locally on SQLite and PostgreSQL under Python 3.13, and all four hosted Python 3.12/3.13 database jobs passed; see [CI results](docs/continuous-integration.md#github-results).
 
 Use the [production environment example](.env.production.example) in a separate deployment checkout. Run migration/static/deployment checks with `--settings=config.production`, then start `python -m config.serve` with the host, port and exact trusted proxy IP appropriate to the environment. The production profile requires debug off, a secret and explicit allowed hosts. HTTPS, process supervision, HSTS policy and shared caching depend on the actual host; HSTS is deliberately deferred and `check --deploy` reports that warning. The [deployment guide](docs/deployment.md) provides exact steps and proxy details. No hosted deployment has been provisioned.
 
@@ -272,12 +288,12 @@ docs/                     Architecture and dated source investigation
 
 `requirements.txt` declares supported ranges; `requirements.lock.txt` records the exact versions installed during this build.
 
-## Current focus and next implementation phase
+## Release scope and remaining limits
 
-Follow the [ordered v1 roadmap](docs/roadmap.md). The analysis-export/notebook and measured matching-evaluation milestones (original items 9 and 10) are excluded from the current release plan at the author's request.
+The selected functional work in the [ordered v1 roadmap](docs/roadmap.md) is implemented; final release commit/tag steps are in the [release guide](docs/releases/v1.0.0.md). The analysis-export/notebook and measured matching-evaluation milestones (original items 9 and 10) are excluded from the current release plan at the author's request.
 
 The current distribution target is a downloadable local application with useful grocery-planning features. Hosting is deferred; the production tooling remains available for later use. Shopping lists and retailer basket estimates now support planning across multiple products. The [portfolio case study](docs/data-science-case-study.md) records implemented data work and possible future analytical milestones separately.
 
 Nine real cross-retailer listed-price pairs are functional across dairy and pantry in the author's development database; 22 other products have one reviewed source. The [24 October delivery investigation](docs/delivery-areas.md) found public delivery claims but no verified shared price/stock scope; comparison requires explicit observation-level evidence. A supported location-specific page/feed and sustained source reliability remain future research. Naheed needs its denied access resolved without identity switching. Establish appropriate broader reuse arrangements and a safe frequency before publishing a large dataset or scheduling collection.
 
-Current limits: Cartpk's adapter is restricted to twelve exact URLs; sustained reliability and delivery areas remain unverified; no final delivered-cost comparison is claimed. Prior connection failures remain in the audit history; the six 29 October imports all succeeded. Olpers Mart is not enabled. There is no scheduler, checkout/delivery, or location selector. History charts show up to 120 recent observations per listing, with older records available through the paginated API; real histories are still sparse. Search scores at most 1,000 candidates. Refreshes select the oldest ten URLs per source; further due URLs require another explicit manual run. Matching and catalog-quality review remain on the [v1 roadmap](docs/roadmap.md). Local validation uses Windows/Python 3.13; hosted CI results must be checked after pushing.
+Current limits: Cartpk's adapter is restricted to twelve exact URLs; sustained reliability and delivery areas remain unverified; no final delivered-cost comparison is claimed. Prior connection failures remain in the audit history; the six 29 October imports all succeeded. Olpers Mart is not enabled. There is no scheduler, checkout/delivery, or location selector. History charts show up to 120 recent observations per listing, with older records available through the paginated API; real histories are still sparse. Search scores at most 1,000 candidates. Refreshes select the oldest ten URLs per source; further due URLs require another explicit manual run. Conservative matching and the read-only catalog-quality report are implemented; no measured matching-accuracy benchmark is included. Local fresh-install validation used Windows/Python 3.13. All four hosted jobs passed for the application commit; confirm CI again for the final release commit before tagging.

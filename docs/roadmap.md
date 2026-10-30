@@ -15,6 +15,6 @@ The release target is a reliable local grocery comparison and planning applicati
 | 9 | Analysis export and reproducible notebook | Skipped |
 | 10 | Measured matching benchmark | Skipped |
 | 11 | Usability, accessibility, snapshot-expiry consistency and measured performance pass | Complete; see [expiry rules, accessibility checks and measurements](usability.md) |
-| 12 | Fresh-install verification, documentation/screenshots, full checks and tagged v1.0 release | Next |
+| 12 | Fresh-install verification, documentation/screenshots, full checks and tagged v1.0 release | Verification and release preparation complete; final commit/CI/tag pending. See [release evidence and steps](releases/v1.0.0.md) |
 
-The finish line is an independently usable local installation, a documented reviewed catalog, trustworthy observation/comparison rules, passing required checks and no unresolved critical defects. Achieved coverage and remaining source limitations must be reported honestly. After release, focus shifts to fixes, data maintenance and feedback.
+The finish line is an independently usable local installation, a documented reviewed catalog, trustworthy observation/comparison rules, passing required checks and no unresolved critical defects. Achieved coverage and remaining source limitations must be reported honestly. The selected functional work is implemented. Remaining release steps are to commit the release files, verify that final revision and its CI results, then create the annotated tag. After release, focus shifts to fixes, data maintenance and feedback.
